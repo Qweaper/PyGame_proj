@@ -14,6 +14,8 @@ height, width = 500, 500
 screen = pygame.display.set_mode((width, height))
 
 
+# функция загрузки изображения
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
@@ -29,6 +31,8 @@ def load_image(name, colorkey=None):
     return image
 
 
+# Класс танка игрока
+
 class PlayerTank(pygame.sprite.Sprite):
     image = load_image('tank.png')
 
@@ -36,6 +40,7 @@ class PlayerTank(pygame.sprite.Sprite):
         super().__init__(group)
         # self.x = None
         # self.y = None
+        # загрузка картинки
         self.image = PlayerTank.image
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
@@ -54,14 +59,21 @@ class PlayerTank(pygame.sprite.Sprite):
         # добавим ближе к завершению
         self.sound = None
 
+        # создание маски
         self.mask = pygame.mask.from_surface(self.image)
         self.rect.x = width // 2
         self.rect.y = height // 2
+
+        # переменные для жизней и кол-ва ранений
+        self.wounds = 1  # ранения
+        self.lifes = 3  # жизни
         players.add(self)
 
+    # метод для возпращения позиции(пока не используется)
     def pos(self):
         return self.rect.x, self.rect.y
 
+    # движение танка игрока
     def move(self, direct):
         next_pos = direct[-1]
         direct = direct[0]
@@ -71,11 +83,14 @@ class PlayerTank(pygame.sprite.Sprite):
         self.rect = self.rect.move(*direct)
 
 
+# создание класса пули
 class Bullet(pygame.sprite.Sprite):
     image = pygame.transform.scale(load_image('bullet.png'), (10, 20))
 
+    # группа спрайтов, позиция, направление, чья пуля(врага, игрока)
     def __init__(self, group, pos, directon, side):
         super().__init__(group)
+        # присваивание картинки спрайту
         self.image = Bullet.image
         self.rect = self.image.get_rect()
         self.images = {
@@ -85,6 +100,7 @@ class Bullet(pygame.sprite.Sprite):
             'left': pygame.transform.rotate(self.image, 90)
         }
 
+        # переменная для работы перемещения
         self.vectors = {
             'up': (0, -10),
             'down': (0, 10),
@@ -95,22 +111,25 @@ class Bullet(pygame.sprite.Sprite):
         self.direction = directon
         self.fly_vector = self.vectors[directon]
         self.mask = pygame.mask.from_surface(self.image)
+
+        # переменная скорости
         self.speed = 0
 
         # корректировка начальной позиции снаряда
         corr_x = player1.rect.width // 2 - 5
         corr_y = player1.rect.height // 2 - 5
-        coor = {
-            'up': (corr_x, 0),
-            'down': (corr_x, corr_y * 2),
-            'right': (corr_x * 2, corr_y),
-            'left': (0, corr_y)
-
-        }
+        # coor = {
+        #     'up': (corr_x, 0),
+        #     'down': (corr_x, corr_y * 2),
+        #     'right': (corr_x * 2, corr_y),
+        #     'left': (0, corr_y)
+        #
+        # }
 
         # здесь надо сделать вылет пули
         # из соответсвтвующей точки
-        corr_x, corr_y = coor[self.direction]
+
+        # corr_x, corr_y = coor[self.direction]
         self.rect.x = pos[0] + corr_x
         self.rect.y = pos[1] + corr_y
 
@@ -118,6 +137,8 @@ class Bullet(pygame.sprite.Sprite):
         self.sound = None
         side.add(self)
 
+    # стандартный метод движения пули
+    # летит в одном направлении
     def update(self):
         # if not pygame.sprite.collide_mask(self.mask, enemies):
         #     global player1_shot
@@ -126,6 +147,7 @@ class Bullet(pygame.sprite.Sprite):
         self.corr_im(self.direction)
         self.rect = self.rect.move(self.fly_vector)
 
+    # корректировка картинки пули
     def corr_im(self, direct):
         # print(direct)
 
@@ -136,7 +158,7 @@ class Bullet(pygame.sprite.Sprite):
 
 player1 = PlayerTank(all_sprites)
 running = True
-player1_shot = False
+player1_shot = False  # флаг-указатель наличия пули игрока на поле
 FPS = 50
 while running:
     screen.fill((255, 255, 255))
@@ -153,16 +175,22 @@ while running:
                 player1.move(((5, 0), 'right'))
             if event.key == pygame.K_LEFT:
                 player1.move(((-5, 0), 'left'))
+            # выстрел пули на пробел
             if event.key == pygame.K_SPACE and not player1_shot:
                 # if event.key == pygame.K_SPACE:
                 bullet = Bullet(all_sprites, player1.pos(), player1.direction, player_bullets)
                 player1_shot = True
+
+    # проверка наличия пули на поле
     if player1_shot:
+        # проверка пули в пределах экрана
         if bullet.rect.x not in range(width) or bullet.rect.y not in range(height):
             bullet.kill()
             player1_shot = False
         # clock.tick(30)
 
+    # стандартная отрисовка объектов
+    # пуля, такн игрока
     all_sprites.draw(screen)
     all_sprites.update()
     players.draw(screen)
