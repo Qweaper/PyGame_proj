@@ -8,6 +8,7 @@ players = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 player_bullets = pygame.sprite.Group()
 enemy_bullets = pygame.sprite.Group()
+walls = pygame.sprite.Group()
 
 clock = pygame.time.Clock()
 height, width = 500, 500
@@ -34,12 +35,13 @@ def load_image(name, colorkey=None):
 # Класс танка игрока
 
 class PlayerTank(pygame.sprite.Sprite):
-    image = load_image('tank.png')
+    image = pygame.transform.scale(load_image('tank.png'), (65, 65))
 
-    def __init__(self, group):
+    def __init__(self, group, startpos=None):
         super().__init__(group)
         # self.x = None
         # self.y = None
+
         # загрузка картинки
         self.image = PlayerTank.image
         self.rect = self.image.get_rect()
@@ -61,13 +63,35 @@ class PlayerTank(pygame.sprite.Sprite):
 
         # создание маски
         self.mask = pygame.mask.from_surface(self.image)
-        self.rect.x = width // 2
-        self.rect.y = height // 2
+        self.rect.x = width // 2 + 5
+        self.rect.y = height // 2 + 5
 
         # переменные для жизней и кол-ва ранений
         self.wounds = 1  # ранения
         self.lifes = 3  # жизни
         players.add(self)
+
+        #
+        # надо добавить метод спавна танка на позиции
+        #
+        self.res_pos = startpos
+
+    # метод взрыва
+    def explose(self):
+        self.lifes -= 1
+        if self.lifes == 0:
+            self.image = load_image('explosion.png')
+            #
+            # Добавить анимацию взрыва
+            #
+            clock.tick(1000)
+            self.kill()
+        else:
+            self.spawn()
+
+    # метод респавна танка
+    def spawn(self):
+        self.rect.x, self.rect.y = self.res_pos
 
     # метод для возпращения позиции(пока не используется)
     def pos(self):
@@ -80,7 +104,8 @@ class PlayerTank(pygame.sprite.Sprite):
         self.direction = next_pos
         self.mask = self.mask = pygame.mask.from_surface(self.images[next_pos])
         self.image = self.images[next_pos]
-        self.rect = self.rect.move(*direct)
+        if not pygame.sprite.spritecollide(self, walls, False):
+            self.rect = self.rect.move(*direct)
 
 
 # создание класса пули
@@ -140,10 +165,16 @@ class Bullet(pygame.sprite.Sprite):
     # стандартный метод движения пули
     # летит в одном направлении
     def update(self):
-        # if not pygame.sprite.collide_mask(self.mask, enemies):
-        #     global player1_shot
-        #     player1_shot = False
-        #     pass
+        if pygame.sprite.spritecollide(self, walls, False):
+            try:
+                enother = pygame.sprite.spritecollideany(self, walls, False)
+                if enother.type == 'brick' or enother.type == 'steel':
+                    global player1_shot
+                    player1_shot = False
+                    pygame.sprite.spritecollideany(self, walls).damage()
+                    self.kill()
+            except Exception:
+                pass
         self.corr_im(self.direction)
         self.rect = self.rect.move(self.fly_vector)
 
@@ -155,6 +186,59 @@ class Bullet(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.fly_vector = self.vectors[direct]
 
+
+class Wall(pygame.sprite.Sprite):
+
+    def __init__(self, group, wall_type, pos):
+        super().__init__(group)
+        walls.add(self)
+        self.types = {
+            'brick': load_image('brick.png'),
+            'steel': pygame.transform.scale(load_image('steel.png'), (65, 65)),
+            'impassable': pygame.transform.scale(load_image('impassable.png'), (65, 65)),
+            'leaves': pygame.transform.scale(load_image('leaves.png'), (65, 65))
+        }
+        self.type = wall_type
+        self.image = self.types[wall_type]
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+        self.mask = pygame.mask.from_surface(self.image)
+
+        if wall_type == 'brick':
+            self.breakable = True
+            self.condition = 4
+        else:
+            self.breakable = False
+
+        if wall_type == 'leaves':
+            self.impass = True
+        else:
+            self.impass = False
+
+    def update(self):
+        if self.breakable:
+            if self.condition == 2 and self.breakable:
+                self.image = pygame.transform.scale(self.image, (self.rect.width, 40))
+                x = self.rect.x
+                y = self.rect.y
+                self.rect = self.image.get_rect()
+                self.rect.x = x
+                self.rect.y = y
+                self.mask = pygame.mask.from_surface(self.image)
+            elif self.condition == 0:
+                self.kill()
+
+    def damage(self):
+        if self.breakable:
+            self.condition -= 1
+            self.update()
+
+
+leaves_wall = Wall(all_sprites, 'leaves', (100, 100))
+wall = Wall(all_sprites, 'brick', (200, 100))
+unbreak_wall = Wall(all_sprites, 'steel', (300, 100))
+water_wall = Wall(all_sprites, 'impassable', (100, 200))
 
 player1 = PlayerTank(all_sprites)
 running = True
