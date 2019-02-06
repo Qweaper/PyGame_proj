@@ -1,5 +1,6 @@
 import pygame
 import os
+import random
 
 pygame.init()
 
@@ -13,6 +14,8 @@ walls = pygame.sprite.Group()
 clock = pygame.time.Clock()
 height, width = 500, 500
 screen = pygame.display.set_mode((width, height))
+
+player1_shot = False  # флаг-указатель наличия пули игрока на поле
 
 
 # функция загрузки изображения
@@ -63,8 +66,8 @@ class PlayerTank(pygame.sprite.Sprite):
 
         # создание маски
         self.mask = pygame.mask.from_surface(self.image)
-        self.rect.x = width // 2 + 5
-        self.rect.y = height // 2 + 5
+        self.rect.x = width // 2
+        self.rect.y = height // 2
 
         # переменные для жизней и кол-ва ранений
         self.wounds = 1  # ранения
@@ -78,20 +81,24 @@ class PlayerTank(pygame.sprite.Sprite):
 
     # метод взрыва
     def explose(self):
-        self.lifes -= 1
-        if self.lifes == 0:
-            self.image = load_image('explosion.png')
+        self.wounds -= 1
+        if self.wounds == 0:
+            self.image = pygame.transform.scale(load_image('explosion.png'), (65, 65))
             #
             # Добавить анимацию взрыва
             #
+            self.lifes -= 1
             clock.tick(1000)
             self.kill()
-        else:
-            self.spawn()
+
+            if self.lifes != 0:
+                self.spawn()
 
     # метод респавна танка
     def spawn(self):
+        self.image = self.images[self.direction]
         self.rect.x, self.rect.y = self.res_pos
+        self.wounds = 1
 
     # метод для возпращения позиции(пока не используется)
     def pos(self):
@@ -106,6 +113,7 @@ class PlayerTank(pygame.sprite.Sprite):
         self.image = self.images[next_pos]
         if not pygame.sprite.spritecollide(self, walls, False):
             self.rect = self.rect.move(*direct)
+            #  проверить по координатам
 
 
 # создание класса пули
@@ -143,13 +151,6 @@ class Bullet(pygame.sprite.Sprite):
         # корректировка начальной позиции снаряда
         corr_x = player1.rect.width // 2 - 5
         corr_y = player1.rect.height // 2 - 5
-        # coor = {
-        #     'up': (corr_x, 0),
-        #     'down': (corr_x, corr_y * 2),
-        #     'right': (corr_x * 2, corr_y),
-        #     'left': (0, corr_y)
-        #
-        # }
 
         # здесь надо сделать вылет пули
         # из соответсвтвующей точки
@@ -171,10 +172,16 @@ class Bullet(pygame.sprite.Sprite):
                 if enother.type == 'brick' or enother.type == 'steel':
                     global player1_shot
                     player1_shot = False
-                    pygame.sprite.spritecollideany(self, walls).damage()
+                    # pygame.sprite.spritecollideany(self, walls).damage()
+                    enother.damage()
                     self.kill()
             except Exception:
                 pass
+        enother = pygame.sprite.spritecollideany(self, enemies, False)
+        if enother:
+            player1_shot = False
+            enother.explose()
+            self.kill()
         self.corr_im(self.direction)
         self.rect = self.rect.move(self.fly_vector)
 
@@ -235,6 +242,88 @@ class Wall(pygame.sprite.Sprite):
             self.update()
 
 
+class EnemyTank(pygame.sprite.Sprite):
+    image = pygame.transform.scale(load_image('enemy.png'), (65, 65))
+
+    def __init__(self, group, startpos=None):
+        super().__init__(group)
+
+        self.image = EnemyTank.image
+        self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+
+        # Переменная отвечающая за напрваление движения
+        # И положение картинки
+        self.direction = 'up'
+        self.images = {
+            'up': self.image,
+            'down': pygame.transform.rotate(self.image, 180),
+            'right': pygame.transform.rotate(self.image, 270),
+            'left': pygame.transform.rotate(self.image, 90)
+        }
+
+        # пока не будет музыки передвижения
+        # добавим ближе к завершению
+        # добавлять ли звуки к танкам врагов????????
+        self.sound = None
+
+        # создание маски
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect.x = startpos[0]
+        self.rect.y = startpos[1]
+
+        # переменные для жизней и кол-ва ранений
+        self.wounds = 1  # ранения
+        self.lifes = 3  # жизни
+        enemies.add(self)
+
+        #
+        # надо добавить метод спавна танка на позиции
+        #
+        self.res_pos = startpos
+
+    def explose(self):
+        self.wounds -= 1
+        if self.wounds == 0:
+            self.image = pygame.transform.scale(load_image('explosion.png'), (65, 65))
+            #
+            # Добавить анимацию взрыва
+            #
+            self.lifes -= 1
+            clock.tick(1000)
+            self.kill()
+
+        if self.lifes != 0:
+            self.spawn()
+
+        # метод респавна танка
+
+    def spawn(self):
+        self.image = self.images[self.direction]
+        self.rect.x, self.rect.y = (100, 300)
+        self.wounds = 1
+
+        # метод для возпращения позиции(пока не используется)
+
+    def pos(self):
+        return self.rect.x, self.rect.y
+
+        # движение танка игрока
+
+    def move(self, direct):
+        next_pos = direct[-1]
+        direct = direct[0]
+        self.direction = next_pos
+        self.mask = self.mask = pygame.mask.from_surface(self.images[next_pos])
+        self.image = self.images[next_pos]
+        if not pygame.sprite.spritecollide(self, walls, False):
+            self.rect = self.rect.move(*direct)
+            #  проверить по координатам
+            #  передвижение танка на 4 флага
+            #  создать функцию определения направления
+
+
+enemy = EnemyTank(all_sprites, (100, 300))
 leaves_wall = Wall(all_sprites, 'leaves', (100, 100))
 wall = Wall(all_sprites, 'brick', (200, 100))
 unbreak_wall = Wall(all_sprites, 'steel', (300, 100))
@@ -242,7 +331,6 @@ water_wall = Wall(all_sprites, 'impassable', (100, 200))
 
 player1 = PlayerTank(all_sprites)
 running = True
-player1_shot = False  # флаг-указатель наличия пули игрока на поле
 FPS = 50
 while running:
     screen.fill((255, 255, 255))
