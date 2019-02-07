@@ -10,6 +10,7 @@ enemies = pygame.sprite.Group()
 player_bullets = pygame.sprite.Group()
 enemy_bullets = pygame.sprite.Group()
 walls = pygame.sprite.Group()
+leaves = pygame.sprite.Group()
 
 clock = pygame.time.Clock()
 height, width = 500, 500
@@ -40,11 +41,16 @@ def load_image(name, colorkey=None):
 class PlayerTank(pygame.sprite.Sprite):
     image = pygame.transform.scale(load_image('tank.png'), (65, 65))
 
-    def __init__(self, group, startpos=None):
-        super().__init__(group)
+    def __init__(self, def_group, group, startpos=None):
+        super().__init__(def_group)
         # self.x = None
         # self.y = None
-
+        self.impassible = {
+            'up': True,
+            'down': True,
+            'left': True,
+            'right': True
+        }
         # загрузка картинки
         self.image = PlayerTank.image
         self.rect = self.image.get_rect()
@@ -68,11 +74,10 @@ class PlayerTank(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.rect.x = width // 2
         self.rect.y = height // 2
-
         # переменные для жизней и кол-ва ранений
         self.wounds = 1  # ранения
         self.lifes = 3  # жизни
-        players.add(self)
+        group.add(self)
 
         #
         # надо добавить метод спавна танка на позиции
@@ -108,11 +113,44 @@ class PlayerTank(pygame.sprite.Sprite):
     def move(self, direct):
         next_pos = direct[-1]
         direct = direct[0]
-        self.direction = next_pos
         self.mask = self.mask = pygame.mask.from_surface(self.images[next_pos])
         self.image = self.images[next_pos]
-        if not pygame.sprite.spritecollide(self, walls, False):
-            self.rect = self.rect.move(*direct)
+        other = pygame.sprite.spritecollide(self, walls, False)
+        self.impassible['up'] = True
+        self.impassible['down'] = True
+        self.impassible['left'] = True
+        self.impassible['right'] = True
+        if len(other) != 0:
+            for i in pygame.sprite.spritecollide(self, walls, False):
+                # print(self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + i.rect.width))
+                # print(self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + i.rect.height))
+                # if i.pos()[0] == self.rect.x and self.rect.y < i.pos()[1]:
+                if self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + 1):
+                    self.impassible['down'] = False
+                    print(1)
+                    # continue
+                # if i.pos()[0] == self.rect.x and i.pos()[1] < self.rect.y:
+                if self.rect.y in range(i.pos()[1], i.pos()[1] + height + 1):
+                    self.impassible['up'] = False
+                    print(2)
+                    # continue
+                # if i.pos()[0] > self.rect.x and i.pos()[1] == self.rect.y:
+                if self.rect.x in range(i.pos()[0], i.pos()[0] + i.rect.width + 1):
+                    self.impassible['left'] = False
+                    print(3)
+                    # continue
+                # if i.pos()[0] < self.rect.x and i.pos()[1] == self.rect.y:
+                if self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + 1):
+                    print(4)
+                    self.impassible['right'] = False
+                    # continue
+        if self.impassible[next_pos]:
+            if self.direction == next_pos:
+                self.rect = self.rect.move(*direct)
+            else:
+                self.image = self.images[next_pos]
+                self.direction = next_pos
+
             #  проверить по координатам
 
 
@@ -196,9 +234,9 @@ class Bullet(pygame.sprite.Sprite):
 
 class Wall(pygame.sprite.Sprite):
 
-    def __init__(self, group, wall_type, pos):
-        super().__init__(group)
-        walls.add(self)
+    def __init__(self, def_group, pos, group, wall_type='Brick'):
+        super().__init__(def_group)
+        group.add(self)
         self.types = {
             'brick': load_image('brick.png'),
             'steel': pygame.transform.scale(load_image('steel.png'), (65, 65)),
@@ -236,6 +274,9 @@ class Wall(pygame.sprite.Sprite):
             elif self.condition == 0:
                 self.kill()
 
+    def pos(self):
+        return self.rect.x, self.rect.y
+
     def damage(self):
         if self.breakable:
             self.condition -= 1
@@ -245,8 +286,8 @@ class Wall(pygame.sprite.Sprite):
 class EnemyTank(pygame.sprite.Sprite):
     image = pygame.transform.scale(load_image('enemy.png'), (65, 65))
 
-    def __init__(self, group, startpos=None):
-        super().__init__(group)
+    def __init__(self, def_group, group, startpos=None):
+        super().__init__(def_group)
 
         self.image = EnemyTank.image
         self.rect = self.image.get_rect()
@@ -275,7 +316,7 @@ class EnemyTank(pygame.sprite.Sprite):
         # переменные для жизней и кол-ва ранений
         self.wounds = 1  # ранения
         self.lifes = 3  # жизни
-        enemies.add(self)
+        group.add(self)
 
         #
         # надо добавить метод спавна танка на позиции
@@ -286,21 +327,24 @@ class EnemyTank(pygame.sprite.Sprite):
         self.wounds -= 1
         if self.wounds == 0:
             self.image = pygame.transform.scale(load_image('explosion.png'), (65, 65))
+
+
             #
             # Добавить анимацию взрыва
             #
             self.lifes -= 1
             clock.tick(1000)
-            self.kill()
+            if self.lifes == 0:
+                self.kill()
 
-        if self.lifes != 0:
+        if self.wounds == 0:
             self.spawn()
 
         # метод респавна танка
 
     def spawn(self):
         self.image = self.images[self.direction]
-        self.rect.x, self.rect.y = (100, 300)
+        self.rect.x, self.rect.y = (random.randint(100, 200), random.randint(250, 300))
         self.wounds = 1
 
         # метод для возпращения позиции(пока не используется)
@@ -321,15 +365,53 @@ class EnemyTank(pygame.sprite.Sprite):
             #  проверить по координатам
             #  передвижение танка на 4 флага
             #  создать функцию определения направления
+            #  Актуальные задачи:
+            #  перемещение вблизи стен
+            #  отрисовка стены и её разрушение
+            #  респаунн такнков
+            #  простенький "ИИ" на рандомах
+            #
 
 
-enemy = EnemyTank(all_sprites, (100, 300))
-leaves_wall = Wall(all_sprites, 'leaves', (100, 100))
-wall = Wall(all_sprites, 'brick', (200, 100))
-unbreak_wall = Wall(all_sprites, 'steel', (300, 100))
-water_wall = Wall(all_sprites, 'impassable', (100, 200))
+class Leaves(Wall):
+    image = pygame.transform.scale(load_image('leaves.png'), (65, 65))
 
-player1 = PlayerTank(all_sprites)
+    def __init__(self, all_group, pos, group):
+        super().__init__(all_group, pos, leaves, 'leaves')
+        self.image = Leaves.image
+        group.add(self)
+
+
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+
+
+leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
+enemy = EnemyTank(all_sprites, enemies, (100, 300))
+wall = Wall(all_sprites, (200, 100), walls, 'brick')
+unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
+water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
+
+player1 = PlayerTank(all_sprites, players)
 running = True
 FPS = 50
 while running:
