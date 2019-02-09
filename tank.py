@@ -1,9 +1,11 @@
-import pygame
 import os
 import random
 
-pygame.init()
+import pygame
 
+pygame.init()
+pygame.key.set_repeat(200, 10)
+STEP = 1
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
@@ -11,6 +13,7 @@ player_bullets = pygame.sprite.Group()
 enemy_bullets = pygame.sprite.Group()
 walls = pygame.sprite.Group()
 leaves = pygame.sprite.Group()
+flags = pygame.sprite.Group()
 
 clock = pygame.time.Clock()
 height, width = 500, 500
@@ -61,9 +64,9 @@ class PlayerTank(pygame.sprite.Sprite):
         self.direction = 'up'
         self.images = {
             'up': self.image,
-            'down': pygame.transform.rotate(self.image, 180),
-            'right': pygame.transform.rotate(self.image, 270),
-            'left': pygame.transform.rotate(self.image, 90)
+            'down': pygame.transform.scale(pygame.transform.rotate(self.image, 180), (65, 65)),
+            'right': pygame.transform.scale(pygame.transform.rotate(self.image, 270), (65, 65)),
+            'left': pygame.transform.scale(pygame.transform.rotate(self.image, 90), (65, 65))
         }
 
         # пока не будет музыки передвижения
@@ -113,8 +116,8 @@ class PlayerTank(pygame.sprite.Sprite):
     def move(self, direct):
         next_pos = direct[-1]
         direct = direct[0]
-        self.mask = self.mask = pygame.mask.from_surface(self.images[next_pos])
-        self.image = self.images[next_pos]
+        # self.mask = self.mask = pygame.mask.from_surface(self.images[next_pos])
+        # self.image = self.images[next_pos]
         other = pygame.sprite.spritecollide(self, walls, False)
         self.impassible['up'] = True
         self.impassible['down'] = True
@@ -147,11 +150,16 @@ class PlayerTank(pygame.sprite.Sprite):
         if self.impassible[next_pos]:
             if self.direction == next_pos:
                 self.rect = self.rect.move(*direct)
-            else:
-                self.image = self.images[next_pos]
-                self.direction = next_pos
-
-            #  проверить по координатам
+        self.image = self.images[next_pos]
+        self.direction = next_pos
+        x = self.rect.x
+        y = self.rect.y
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.rect.height = 65
+        self.rect.width = 65
+        #  проверить по координатам
 
 
 # создание класса пули
@@ -215,11 +223,19 @@ class Bullet(pygame.sprite.Sprite):
                     self.kill()
             except Exception:
                 pass
-        enother = pygame.sprite.spritecollideany(self, enemies, False)
-        if enother:
+        if pygame.sprite.spritecollideany(self, enemies, False):
+            enother = pygame.sprite.spritecollideany(self, enemies, False)
             player1_shot = False
             enother.explose()
             self.kill()
+        if pygame.sprite.spritecollide(self, flags, False):
+            enother = pygame.sprite.spritecollide(self, flags, False)
+            for i in enother:
+                try:
+                    print('ok')
+                    i.defeat()
+                except Exception:
+                    pass
         self.corr_im(self.direction)
         self.rect = self.rect.move(self.fly_vector)
 
@@ -328,7 +344,6 @@ class EnemyTank(pygame.sprite.Sprite):
         if self.wounds == 0:
             self.image = pygame.transform.scale(load_image('explosion.png'), (65, 65))
 
-
             #
             # Добавить анимацию взрыва
             #
@@ -405,6 +420,28 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.image = self.frames[self.cur_frame]
 
 
+class MainFlag(pygame.sprite.Sprite):
+    image = pygame.transform.scale(load_image('Flag.png'), (65, 65))
+
+    def __init__(self, group, pos, gr):
+        super().__init__(group)
+        self.image = MainFlag.image
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+        self.lifes = 1
+        gr.add(self)
+
+    def defeat(self):
+        self.lifes -= 1
+        self.image = load_image('defeat.png')
+        sec = 0
+        while sec != 2:
+            sec += clock.tick()
+        pygame.quit()
+
+
+Flag = MainFlag(all_sprites, (100, 400), flags)
 leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
 enemy = EnemyTank(all_sprites, enemies, (100, 300))
 wall = Wall(all_sprites, (200, 100), walls, 'brick')
@@ -422,13 +459,13 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:  # Управление нашим танком
             if event.key == pygame.K_UP:
-                player1.move(((0, -5), 'up'))
+                player1.move(((0, -STEP), 'up'))
             if event.key == pygame.K_DOWN:
-                player1.move(((0, 5), 'down'))
+                player1.move(((0, STEP), 'down'))
             if event.key == pygame.K_RIGHT:
-                player1.move(((5, 0), 'right'))
+                player1.move(((STEP, 0), 'right'))
             if event.key == pygame.K_LEFT:
-                player1.move(((-5, 0), 'left'))
+                player1.move(((-STEP, 0), 'left'))
             # выстрел пули на пробел
             if event.key == pygame.K_SPACE and not player1_shot:
                 # if event.key == pygame.K_SPACE:
@@ -446,8 +483,9 @@ while running:
     # стандартная отрисовка объектов
     # пуля, такн игрока
     all_sprites.draw(screen)
-    all_sprites.update()
     players.draw(screen)
+    leaves.draw(screen)
+    all_sprites.update()
     clock.tick(60)
     pygame.display.flip()
 
