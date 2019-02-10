@@ -1,14 +1,10 @@
+import pygame
+from tank import PlayerTank, Bullet, Wall, EnemyTank, Leaves, MainFlag
+import sys
 import os
 import random
+import time
 
-import pygame
-
-pygame.init()
-clock = pygame.time.Clock()
-height, width = 500, 500
-screen = pygame.display.set_mode((width, height))
-pygame.key.set_repeat(200, 10)
-STEP = 1
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
@@ -17,9 +13,9 @@ enemy_bullets = pygame.sprite.Group()
 walls = pygame.sprite.Group()
 leaves = pygame.sprite.Group()
 flags = pygame.sprite.Group()
+clock = pygame.time.Clock()
+FPS = 50
 
-
-# функция загрузки изображения
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -497,48 +493,196 @@ class MainFlag(pygame.sprite.Sprite):
         self.lifes -= 1
         self.image = load_image('defeat.png')
         sec = 0
-        while sec != 2:
-            sec += clock.tick(FPS)
         pygame.quit()
 
 
-if __name__ == '__main__':
+def load_level(filename):
+    filename = "data/" + filename
+    # читаем уровень, убирая символы перевода строки
+    with open(filename, 'r') as mapFile:
+        level_map = [line.strip() for line in mapFile]
 
-    player_shot = False  # флаг-указатель наличия пули игрока на поле
+    # и подсчитываем максимальную длину
+    max_width = max(map(len, level_map))
 
-    screen_rect = (0, 0, width, height)
+    # дополняем каждую строку пустыми клетками ('.')
+    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
-    Flag = MainFlag(all_sprites, (100, 400), flags)
-    leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
-    enemy = EnemyTank(all_sprites, enemies, (100, 300))
-    wall = Wall(all_sprites, (400, 250), walls, 'brick')
-    unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
-    water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
 
-    player = PlayerTank(all_sprites, players)
-    running = True
+tile_width = tile_height = 65
+
+
+# Flag = MainFlag(all_sprites, (100, 400), flags)
+# leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
+# enemy = EnemyTank(all_sprites, enemies, (100, 300))
+# wall = Wall(all_sprites, (400, 250), walls, 'brick')
+# unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
+# water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
+
+
+def generate_level(level):
+    new_player, x, y = None, None, None
+    for y in range(len(level)):
+        for x in range(len(level[y])):
+            if level[y][x] == 'W':
+                Wall(all_sprites, (y * 65, x * 65), walls, 'impassable')
+            elif level[y][x] == '#':
+                Wall(all_sprites, (y * 65, x * 65), walls, 'steel')
+            elif level[y][x] == 'F':
+                MainFlag(all_sprites, (y * 65, x * 65), flags)
+            elif level[y][x] == 'L':
+                Wall(all_sprites, (y * 65, x * 65), leaves, 'leaves')
+            elif level[y][x] == '*':
+                Wall(all_sprites, (y * 65, x * 65), walls, 'brick')
+            elif level[y][x] == 'E':
+                EnemyTank(all_sprites, enemies, (y * 65, x * 65))
+            elif level[y][x] == '@':
+                new_player = PlayerTank(all_sprites, players, (y * 65, x * 65))
+    # вернем игрока, а также размер поля в клетках
+    return new_player, x, y
+
+
+def load_image(name, colorkey=None):
+    fullname = os.path.join('data', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Cannot load image:', name)
+        raise SystemExit(message)
+    image = image.convert_alpha()
+    if colorkey is not None:
+        if colorkey is -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    return image
+
+
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+
+def start_screen(game_over=False):
+    WIDTH = 400
+    HEIGHT = 600
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     FPS = 50
-    while running:
-        screen.fill((255, 255, 255))
-        all_sprites.draw(screen)
+    clock = pygame.time.Clock()
+    COLOR_B = (0, 0, 0)
+    COLOR_W = (255, 255, 255)
+
+    screen.fill((255, 255, 255))
+    x = WIDTH // 10
+    y = -HEIGHT
+    # переделать самому тему с тестом
+    # сделать кнопки, тупо координаты
+    run = True
+
+    while run:
+        # screen.fill((255, 255, 255))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN:  # Управление нашим танком
-                if event.key == pygame.K_UP:
-                    player.move(((0, -STEP), 'up'))
-                if event.key == pygame.K_DOWN:
-                    player.move(((0, STEP), 'down'))
-                if event.key == pygame.K_RIGHT:
-                    player.move(((STEP, 0), 'right'))
-                if event.key == pygame.K_LEFT:
-                    player.move(((-STEP, 0), 'left'))
-                # выстрел пули на пробел
-                if event.key == pygame.K_SPACE and not player_shot:
-                    # if event.key == pygame.K_SPACE:
-                    bullet = Bullet(all_sprites, player.pos(), player.direction, player_bullets)
-                    player_shot = True
-        enemy.move(((1, 0), 'up'))
+                terminate()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 5,
+                                                                                                 HEIGHT // 10 * 5 + 75) and not game_over:
+                    if event.button == 1:
+                        return
+                if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 8,
+                                                                                                 HEIGHT // 10 * 8 + 75) and not game_over:
+                    if event.button == 1:
+                        terminate()
+
+            if (event.type == pygame.KEYDOWN or
+                event.type == pygame.MOUSEBUTTONDOWN) and game_over:
+                game_over = False
+                x = WIDTH // 10
+                y = -HEIGHT
+        if game_over:
+            if y + 4 <= HEIGHT // 2 and game_over:
+                screen.fill(COLOR_W)
+                pygame.draw.rect(screen, COLOR_W, (x, y, 300, 300))
+                font = pygame.font.Font(None, 60)
+                text = font.render("<<Game Over>>", 1, (0, 255, 0))
+                text1 = font.render('press Any key', 1, (0, 255, 0))
+                screen.blit(text, (x, y))
+                screen.blit(text1, (x, y + 40))
+                y += 4
+                # print('game_over')
+
+        if y + 4 <= HEIGHT // 8 and not game_over:
+            screen.fill(COLOR_W)
+            pygame.draw.rect(screen, COLOR_W, (x, y, 300, 300))
+            font = pygame.font.Font(None, 60)
+            text = font.render("<<<Tanchiki>>>", 1, (0, 255, 0))
+            screen.blit(text, (x, y))
+            y += 4
+        if y + 4 >= HEIGHT // 8 and not game_over:
+            color = (0, 0, 0)
+            # pygame.draw.rect(screen, (0, 0, 0), (x - 2, 0, 600, 300))
+            screen.fill(COLOR_W)
+            font = pygame.font.Font(None, 60)
+            text = font.render("<<<Tanchiki>>>", 1, (0, 255, 0))
+            screen.blit(text, (x, y))
+            start_button = pygame.draw.rect(screen, (128, 128, 128), (WIDTH // 8, 0 + HEIGHT // 10 * 5, 300, 75))
+            font = pygame.font.Font(None, 40)
+            text = font.render('Начать игру', 1, (0, 0, 0))
+            screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 5 + 20))
+            exit_button = pygame.draw.rect(screen, (128, 128, 128), (WIDTH // 8, 0 + HEIGHT // 10 * 8, 300, 75))
+            font = pygame.font.Font(None, 40)
+            text = font.render('Выход', 1, (0, 0, 0))
+            screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 8 + 20))
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+# def game():
+FPS = 50
+width = 800
+height = 600
+
+pygame.init()
+pygame.key.set_repeat(200, 10)
+STEP = 1
+height, width = 65 * 15, 65 * 16
+screen = pygame.display.set_mode((width, height))
+
+player_shot = False  # флаг-указатель наличия пули игрока на поле
+
+screen_rect = (0, 0, width, height)
+
+running = True
+start = False
+player = None
+while running:
+    screen.fill((0, 0, 0))
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            start_screen()
+        if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+            # start = False
+            if player is None:
+                player, x, y = generate_level(load_level('test_level.txt'))
+            all_sprites.add(player)
+            players.add(player)
+        # screen.fill((255, 255, 255))
+
+        if event.type == pygame.KEYDOWN:  # Управление нашим танком
+            if event.key == pygame.K_UP:
+                player.move(((0, -STEP), 'up'))
+            if event.key == pygame.K_DOWN:
+                player.move(((0, STEP), 'down'))
+            if event.key == pygame.K_RIGHT:
+                player.move(((STEP, 0), 'right'))
+            if event.key == pygame.K_LEFT:
+                player.move(((-STEP, 0), 'left'))
+            # выстрел пули на пробел
+            if event.key == pygame.K_SPACE and not player_shot:
+                # if event.key == pygame.K_SPACE:
+                bullet = Bullet(all_sprites, player.pos(), player.direction, player_bullets)
+                player_shot = True
         # проверка наличия пули на поле
         if player_shot:
             # проверка пули в пределах экрана
@@ -549,11 +693,27 @@ if __name__ == '__main__':
 
         # стандартная отрисовка объектов
         # пуля, такн игрока
-        all_sprites.draw(screen)
-        players.draw(screen)
-        leaves.draw(screen)
-        all_sprites.update()
-        clock.tick(FPS)
-        pygame.display.flip()
+    all_sprites.draw(screen)
+    players.draw(screen)
+    leaves.draw(screen)
+    all_sprites.update()
+    clock.tick(FPS)
+    pygame.display.flip()
+    # all_sprites.draw(screen)
+    # players.draw(screen)
+    # leaves.draw(screen)
+    # pygame.display.flip()
 
-    pygame.quit()
+
+start_screen()
+
+# if not start:
+# camera = Camera()
+# изменяем ракурс камеры
+# camera.update(player)
+# обновляем положение всех спрайтов
+# for sprite in all_sprites:
+#     camera.apply(sprite)
+
+
+pygame.quit()

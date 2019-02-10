@@ -24,7 +24,7 @@ clock = pygame.time.Clock()
 height, width = 65  * 15, 65 * 16
 screen = pygame.display.set_mode((width, height))
 
-player1_shot = False  # флаг-указатель наличия пули игрока на поле
+player_shot = False  # флаг-указатель наличия пули игрока на поле
 
 screen_rect = (0, 0, width, height)
 
