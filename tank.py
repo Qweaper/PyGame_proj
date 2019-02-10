@@ -21,6 +21,8 @@ screen = pygame.display.set_mode((width, height))
 
 player1_shot = False  # флаг-указатель наличия пули игрока на поле
 
+screen_rect = (0, 0, width, height)
+
 
 # функция загрузки изображения
 
@@ -96,7 +98,7 @@ class PlayerTank(pygame.sprite.Sprite):
             # Добавить анимацию взрыва
             #
             self.lifes -= 1
-            clock.tick(1000)
+            clock.tick(FPS)
             self.kill()
 
             if self.lifes != 0:
@@ -219,8 +221,9 @@ class Bullet(pygame.sprite.Sprite):
                     global player1_shot
                     player1_shot = False
                     # pygame.sprite.spritecollideany(self, walls).damage()
-                    enother.damage()
                     self.kill()
+                    enother.damage(self.direction)
+                    # create_particles(enother.pos())
             except Exception:
                 pass
         if pygame.sprite.spritecollideany(self, enemies, False):
@@ -265,6 +268,12 @@ class Wall(pygame.sprite.Sprite):
         self.rect.x = pos[0]
         self.rect.y = pos[1]
         self.mask = pygame.mask.from_surface(self.image)
+        self.damages = {
+            'up': 0,
+            'down': 0,
+            'left': 0,
+            'right': 0
+        }
 
         if wall_type == 'brick':
             self.breakable = True
@@ -277,26 +286,51 @@ class Wall(pygame.sprite.Sprite):
         else:
             self.impass = False
 
-    def update(self):
+    def update(self, bull_dir=None):
+        # присутствует баг
+        # после которого стена ломается после 3 попаданий, а надо с 4
+
         if self.breakable:
-            if self.condition == 2 and self.breakable:
-                self.image = pygame.transform.scale(self.image, (self.rect.width, 40))
+            if bull_dir is not None:
+                rev_dir = {
+                    'up': 'right',
+                    'down': 'up',
+                    'left': 'down',
+                    'right': 'left'
+                }
+                bull_dir = rev_dir[bull_dir]
+                step = self.rect.width // 5
+                if bull_dir == 'up':
+                    self.damages[bull_dir] += 1
+                    self.damages['right'] += 1
+                if bull_dir == 'down':
+                    self.damages[bull_dir] += 1
+                if bull_dir == 'left':
+                    self.damages[bull_dir] += 1
+                    self.damages['down'] += 1
+                if bull_dir == 'right':
+                    self.damages[bull_dir] += 1
+                self.condition -= 1
+            if self.condition <= 3 and bull_dir is not None:
+                # self.image = pygame.transform.scale(self.image, (self.rect.width, 40))
                 x = self.rect.x
                 y = self.rect.y
+                self.image = pygame.transform.scale(self.image, (
+                    self.rect.width - self.damages['down'] * step, self.rect.height - self.damages['right'] * step))
                 self.rect = self.image.get_rect()
-                self.rect.x = x
-                self.rect.y = y
+                self.rect.x = x + self.damages['left'] * step
+                self.rect.y = y + self.damages['up'] * step
                 self.mask = pygame.mask.from_surface(self.image)
             elif self.condition == 0:
+                print('kill')
                 self.kill()
 
     def pos(self):
         return self.rect.x, self.rect.y
 
-    def damage(self):
+    def damage(self, direction):
         if self.breakable:
-            self.condition -= 1
-            self.update()
+            self.update(direction)
 
 
 class EnemyTank(pygame.sprite.Sprite):
@@ -348,7 +382,7 @@ class EnemyTank(pygame.sprite.Sprite):
             # Добавить анимацию взрыва
             #
             self.lifes -= 1
-            clock.tick(1000)
+            clock.tick(FPS)
             if self.lifes == 0:
                 self.kill()
 
@@ -437,14 +471,13 @@ class MainFlag(pygame.sprite.Sprite):
         self.image = load_image('defeat.png')
         sec = 0
         while sec != 2:
-            sec += clock.tick()
+            sec += clock.tick(FPS)
         pygame.quit()
-
 
 Flag = MainFlag(all_sprites, (100, 400), flags)
 leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
 enemy = EnemyTank(all_sprites, enemies, (100, 300))
-wall = Wall(all_sprites, (200, 100), walls, 'brick')
+wall = Wall(all_sprites, (400, 250), walls, 'brick')
 unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
 water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
 
@@ -486,7 +519,7 @@ while running:
     players.draw(screen)
     leaves.draw(screen)
     all_sprites.update()
-    clock.tick(60)
+    clock.tick(FPS)
     pygame.display.flip()
 
 pygame.quit()

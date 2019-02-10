@@ -40,20 +40,24 @@ def start_screen(game_over=False):
     y = -HEIGHT
     # переделать самому тему с тестом
     # сделать кнопки, тупо координаты
-
-    while True:
+    run = True
+    while run:
         # screen.fill((255, 255, 255))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 5,
                                                                                                  HEIGHT // 10 * 5 + 75) and not game_over:
                     if event.button == 1:
                         return
+                if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 8,
+                                                                                                 HEIGHT // 10 * 8 + 75) and not game_over:
+                    if event.button == 1:
+                        terminate()
 
-            elif (event.type == pygame.KEYDOWN or
+            if (event.type == pygame.KEYDOWN or
                     event.type == pygame.MOUSEBUTTONDOWN) and game_over:
                 game_over = False
                 x = WIDTH // 10
@@ -88,7 +92,10 @@ def start_screen(game_over=False):
             font = pygame.font.Font(None, 40)
             text = font.render('Начать игру', 1, (0, 0, 0))
             screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 5 + 20))
-
+            exit_button = pygame.draw.rect(screen, (128, 128, 128), (WIDTH // 8, 0 + HEIGHT // 10 * 8, 300, 75))
+            font = pygame.font.Font(None, 40)
+            text = font.render('Выход', 1, (0, 0, 0))
+            screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 8 + 20))
         pygame.display.flip()
         clock.tick(FPS)
 
