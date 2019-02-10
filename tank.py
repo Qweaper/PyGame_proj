@@ -149,6 +149,28 @@ class PlayerTank(pygame.sprite.Sprite):
                     print(4)
                     self.impassible['right'] = False
                     # continue
+        elif len(other) == 1:
+            if pygame.sprite.spritecollide(self, enemies, False):
+                for i in enemies:
+                    if self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + 1):
+                        self.impassible['down'] = False
+                        print(1)
+                        # continue
+                    # if i.pos()[0] == self.rect.x and i.pos()[1] < self.rect.y:
+                    if self.rect.y in range(i.pos()[1], i.pos()[1] + height + 1):
+                        self.impassible['up'] = False
+                        print(2)
+                        # continue
+                    # if i.pos()[0] > self.rect.x and i.pos()[1] == self.rect.y:
+                    if self.rect.x in range(i.pos()[0], i.pos()[0] + i.rect.width + 1):
+                        self.impassible['left'] = False
+                        print(3)
+                        # continue
+                    # if i.pos()[0] < self.rect.x and i.pos()[1] == self.rect.y:
+                    if self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + 1):
+                        print(4)
+                        self.impassible['right'] = False
+                        # continue
         if self.impassible[next_pos]:
             if self.direction == next_pos:
                 self.rect = self.rect.move(*direct)
@@ -368,6 +390,7 @@ class EnemyTank(pygame.sprite.Sprite):
         self.lifes = 3  # жизни
         group.add(self)
 
+        self.time = 0
         #
         # надо добавить метод спавна танка на позиции
         #
@@ -409,17 +432,26 @@ class EnemyTank(pygame.sprite.Sprite):
         self.direction = next_pos
         self.mask = self.mask = pygame.mask.from_surface(self.images[next_pos])
         self.image = self.images[next_pos]
-        if not pygame.sprite.spritecollide(self, walls, False):
-            self.rect = self.rect.move(*direct)
-            #  проверить по координатам
-            #  передвижение танка на 4 флага
-            #  создать функцию определения направления
-            #  Актуальные задачи:
-            #  перемещение вблизи стен
-            #  отрисовка стены и её разрушение
-            #  респаунн такнков
-            #  простенький "ИИ" на рандомах
-            #
+        if not pygame.sprite.spritecollide(self, players, False):
+
+            if not pygame.sprite.spritecollide(self, walls, False):
+                self.rect = self.rect.move(*direct)
+                self.time += 20
+                if self.time >= 2000:
+                    x = random.choice([-5, 0, 5])
+                    y = 0
+                    if x == 0:
+                        y = random.choice([-5, 0, 5])
+
+                #  проверить по координатам
+                #  передвижение танка на 4 флага
+                #  создать функцию определения направления
+                #  Актуальные задачи:
+                #  перемещение вблизи стен
+                #  отрисовка стены и её разрушение
+                #  респаунн такнков
+                #  простенький "ИИ" на рандомах
+                #
 
 
 class Leaves(Wall):
@@ -474,52 +506,55 @@ class MainFlag(pygame.sprite.Sprite):
             sec += clock.tick(FPS)
         pygame.quit()
 
-Flag = MainFlag(all_sprites, (100, 400), flags)
-leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
-enemy = EnemyTank(all_sprites, enemies, (100, 300))
-wall = Wall(all_sprites, (400, 250), walls, 'brick')
-unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
-water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
 
-player1 = PlayerTank(all_sprites, players)
-running = True
-FPS = 50
-while running:
-    screen.fill((255, 255, 255))
-    all_sprites.draw(screen)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYDOWN:  # Управление нашим танком
-            if event.key == pygame.K_UP:
-                player1.move(((0, -STEP), 'up'))
-            if event.key == pygame.K_DOWN:
-                player1.move(((0, STEP), 'down'))
-            if event.key == pygame.K_RIGHT:
-                player1.move(((STEP, 0), 'right'))
-            if event.key == pygame.K_LEFT:
-                player1.move(((-STEP, 0), 'left'))
-            # выстрел пули на пробел
-            if event.key == pygame.K_SPACE and not player1_shot:
-                # if event.key == pygame.K_SPACE:
-                bullet = Bullet(all_sprites, player1.pos(), player1.direction, player_bullets)
-                player1_shot = True
+if __name__ == '__main__':
 
-    # проверка наличия пули на поле
-    if player1_shot:
-        # проверка пули в пределах экрана
-        if bullet.rect.x not in range(width) or bullet.rect.y not in range(height):
-            bullet.kill()
-            player1_shot = False
-        # clock.tick(30)
+    Flag = MainFlag(all_sprites, (100, 400), flags)
+    leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
+    enemy = EnemyTank(all_sprites, enemies, (100, 300))
+    wall = Wall(all_sprites, (400, 250), walls, 'brick')
+    unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
+    water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
 
-    # стандартная отрисовка объектов
-    # пуля, такн игрока
-    all_sprites.draw(screen)
-    players.draw(screen)
-    leaves.draw(screen)
-    all_sprites.update()
-    clock.tick(FPS)
-    pygame.display.flip()
+    player1 = PlayerTank(all_sprites, players)
+    running = True
+    FPS = 50
+    while running:
+        screen.fill((255, 255, 255))
+        all_sprites.draw(screen)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:  # Управление нашим танком
+                if event.key == pygame.K_UP:
+                    player1.move(((0, -STEP), 'up'))
+                if event.key == pygame.K_DOWN:
+                    player1.move(((0, STEP), 'down'))
+                if event.key == pygame.K_RIGHT:
+                    player1.move(((STEP, 0), 'right'))
+                if event.key == pygame.K_LEFT:
+                    player1.move(((-STEP, 0), 'left'))
+                # выстрел пули на пробел
+                if event.key == pygame.K_SPACE and not player1_shot:
+                    # if event.key == pygame.K_SPACE:
+                    bullet = Bullet(all_sprites, player1.pos(), player1.direction, player_bullets)
+                    player1_shot = True
+        enemy.move(((1, 0), 'up'))
+        # проверка наличия пули на поле
+        if player1_shot:
+            # проверка пули в пределах экрана
+            if bullet.rect.x not in range(width) or bullet.rect.y not in range(height):
+                bullet.kill()
+                player1_shot = False
+            # clock.tick(30)
 
-pygame.quit()
+        # стандартная отрисовка объектов
+        # пуля, такн игрока
+        all_sprites.draw(screen)
+        players.draw(screen)
+        leaves.draw(screen)
+        all_sprites.update()
+        clock.tick(FPS)
+        pygame.display.flip()
+
+    pygame.quit()
