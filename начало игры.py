@@ -6,10 +6,12 @@ import pygame
 pygame.init()
 
 WIDTH = 400
-HEIGHT = 400
+HEIGHT = 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 FPS = 50
 clock = pygame.time.Clock()
+COLOR_B = (0, 0, 0)
+COLOR_W = (255, 255, 255)
 
 
 def load_image(name, colorkey=None):
@@ -33,36 +35,48 @@ def terminate():
 
 
 def start_screen(game_over=False):
-    intro_text = ["<<<Tanchiki>>>", "",
-                  "Начало игры",
-                  "",
-                  ""]
-
+    screen.fill((255, 255, 255))
+    x = WIDTH // 10
+    y = -HEIGHT
     # переделать самому тему с тестом
     # сделать кнопки, тупо координаты
 
-
-    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
-
     while True:
+        # screen.fill((255, 255, 255))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 5,
+                                                                                                 HEIGHT // 10 * 5 + 75):
+                    if event.button == 1:
+                        return
+
+            # elif event.type == pygame.KEYDOWN or \
+            #         event.type == pygame.MOUSEBUTTONDOWN:
+            #     return  # начинаем игру
+        if y + 4 <= HEIGHT // 8:
+            screen.fill(COLOR_W)
+            pygame.draw.rect(screen, COLOR_W, (x, y, 300, 300))
+            font = pygame.font.Font(None, 60)
+            text = font.render("<<<Tanchiki>>>", 1, (0, 255, 0))
+            screen.blit(text, (x, y))
+            y += 4
+        if y + 4 >= HEIGHT // 8:
+            color = (0, 0, 0)
+            # pygame.draw.rect(screen, (0, 0, 0), (x - 2, 0, 600, 300))
+            screen.fill(COLOR_W)
+            font = pygame.font.Font(None, 60)
+            text = font.render("<<<Tanchiki>>>", 1, (0, 255, 0))
+            screen.blit(text, (x, y))
+            start_button = pygame.draw.rect(screen, (128, 128, 128), (WIDTH // 8, 0 + HEIGHT // 10 * 5, 300, 75))
+            font = pygame.font.Font(None, 40)
+            text = font.render('Начать игру', 1, (0, 0, 0))
+            screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 5 + 20))
+
         pygame.display.flip()
         clock.tick(FPS)
+
 
 start_screen()
