@@ -49,21 +49,35 @@ def start_screen(game_over=False):
                 terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 5,
-                                                                                                 HEIGHT // 10 * 5 + 75):
+                                                                                                 HEIGHT // 10 * 5 + 75) and not game_over:
                     if event.button == 1:
                         return
 
-            # elif event.type == pygame.KEYDOWN or \
-            #         event.type == pygame.MOUSEBUTTONDOWN:
-            #     return  # начинаем игру
-        if y + 4 <= HEIGHT // 8:
+            elif (event.type == pygame.KEYDOWN or
+                    event.type == pygame.MOUSEBUTTONDOWN) and game_over:
+                game_over = False
+                x = WIDTH // 10
+                y = -HEIGHT
+        if game_over:
+            if y + 4 <= HEIGHT // 2 and game_over:
+                screen.fill(COLOR_W)
+                pygame.draw.rect(screen, COLOR_W, (x, y, 300, 300))
+                font = pygame.font.Font(None, 60)
+                text = font.render("<<Game Over>>", 1, (0, 255, 0))
+                text1 = font.render('press Any key', 1, (0, 255, 0))
+                screen.blit(text, (x, y))
+                screen.blit(text1, (x, y + 40))
+                y += 4
+                # print('game_over')
+
+        if y + 4 <= HEIGHT // 8 and not game_over:
             screen.fill(COLOR_W)
             pygame.draw.rect(screen, COLOR_W, (x, y, 300, 300))
             font = pygame.font.Font(None, 60)
             text = font.render("<<<Tanchiki>>>", 1, (0, 255, 0))
             screen.blit(text, (x, y))
             y += 4
-        if y + 4 >= HEIGHT // 8:
+        if y + 4 >= HEIGHT // 8 and not game_over:
             color = (0, 0, 0)
             # pygame.draw.rect(screen, (0, 0, 0), (x - 2, 0, 600, 300))
             screen.fill(COLOR_W)
