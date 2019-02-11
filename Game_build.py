@@ -103,7 +103,7 @@ class PlayerTank(pygame.sprite.Sprite):
 
     # метод для возпращения позиции(пока не используется)
     def pos(self):
-        return self.rect.x, self.rect.y
+        return self.rect.x, self.rect.y, self.rect.width, self.rect.height
 
     # движение танка игрока
     def move(self, direct):
@@ -210,15 +210,15 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 0
 
         # корректировка начальной позиции снаряда
-        corr_x = self.rect.width // 2 - 5
-        corr_y = self.rect.height // 2 - 5
+        corr_x = self.rect.width
+        corr_y = self.rect.height
 
         # здесь надо сделать вылет пули
         # из соответсвтвующей точки
 
         # corr_x, corr_y = coor[self.direction]
-        self.rect.x = pos[0] + corr_x
-        self.rect.y = pos[1] + corr_y
+        self.rect.x = pos[0] + pos[2] // 2 - 5
+        self.rect.y = pos[1] + pos[3] // 2 - 5
 
         # звуковое оформление сделаем позже
         self.sound = None
@@ -637,8 +637,9 @@ def start_screen(game_over=False):
         clock.tick(FPS)
 
 
+start_screen()
+
 # def game():
-FPS = 50
 width = 800
 height = 600
 
@@ -657,17 +658,15 @@ start = False
 player = None
 while running:
     screen.fill((0, 0, 0))
+    if player is None:
+        player, x, y = generate_level(load_level('test_level.txt'))
+    all_sprites.add(player)
+    players.add(player)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
             start_screen()
-        if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-            # start = False
-            if player is None:
-                player, x, y = generate_level(load_level('test_level.txt'))
-            all_sprites.add(player)
-            players.add(player)
-        # screen.fill((255, 255, 255))
+        # if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
 
         if event.type == pygame.KEYDOWN:  # Управление нашим танком
             if event.key == pygame.K_UP:
@@ -699,21 +698,7 @@ while running:
     all_sprites.update()
     clock.tick(FPS)
     pygame.display.flip()
-    # all_sprites.draw(screen)
-    # players.draw(screen)
-    # leaves.draw(screen)
-    # pygame.display.flip()
 
-
-start_screen()
-
-# if not start:
-# camera = Camera()
-# изменяем ракурс камеры
-# camera.update(player)
-# обновляем положение всех спрайтов
-# for sprite in all_sprites:
-#     camera.apply(sprite)
 
 
 pygame.quit()

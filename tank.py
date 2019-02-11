@@ -107,7 +107,7 @@ class PlayerTank(pygame.sprite.Sprite):
 
     # метод для возпращения позиции(пока не используется)
     def pos(self):
-        return self.rect.x, self.rect.y
+        return self.rect.x, self.rect.y, self.rect.width, self.rect.height
 
     # движение танка игрока
     def move(self, direct):
@@ -214,15 +214,15 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 0
 
         # корректировка начальной позиции снаряда
-        corr_x = self.rect.width // 2 - 5
-        corr_y = self.rect.height // 2 - 5
+        # corr_x = self.rect.width // 2 - 5
+        # corr_y = self.rect.height // 2 - 5
 
         # здесь надо сделать вылет пули
         # из соответсвтвующей точки
 
         # corr_x, corr_y = coor[self.direction]
-        self.rect.x = pos[0] + corr_x
-        self.rect.y = pos[1] + corr_y
+        self.rect.x = pos[0] + pos[2] // 2 - 5
+        self.rect.y = pos[1] + pos[3] // 2 - 5
 
         # звуковое оформление сделаем позже
         self.sound = None
@@ -514,8 +514,7 @@ if __name__ == '__main__':
     wall = Wall(all_sprites, (400, 250), walls, 'brick')
     unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
     water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
-
-    player = PlayerTank(all_sprites, players)
+    player = PlayerTank(all_sprites, players, (width // 2, height // 2))
     running = True
     FPS = 50
     while running:
