@@ -84,6 +84,8 @@ class PlayerTank(pygame.sprite.Sprite):
         #
         self.res_pos = startpos
 
+
+
     # метод взрыва
     def explose(self):
         self.wounds -= 1

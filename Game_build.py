@@ -1,9 +1,10 @@
-import pygame
-from tank import PlayerTank, Bullet, Wall, EnemyTank, Leaves, MainFlag
-import sys
 import os
 import random
-import time
+import sys
+import pprint
+import pygame
+
+from tank import PlayerTank, Bullet, Wall, EnemyTank, Leaves, MainFlag
 
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
@@ -16,6 +17,7 @@ flags = pygame.sprite.Group()
 clock = pygame.time.Clock()
 FPS = 50
 size = 30
+
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -79,6 +81,24 @@ class PlayerTank(pygame.sprite.Sprite):
         # надо добавить метод спавна танка на позиции
         #
         self.res_pos = startpos
+
+    def update(self):
+        if pygame.sprite.spritecollide(self, walls, False):
+            other = pygame.sprite.spritecollide(self, walls, False)
+            x = self.rect.x
+            y = self.rect.y
+            if self.direction == 'up':
+                j = y // size
+                self.rect.y = size * (j + 1)
+            if self.direction == 'down':
+                j = (y + self.rect.height) // size
+                self.rect.y = size * (j - 1)
+            if self.direction == 'left':
+                i = x // size
+                self.rect.x = size * (i + 1)
+            if self.direction == 'right':
+                i = x // size
+                self.rect.x = size + self.rect.width * (i - 1)
 
     # метод взрыва
     def explose(self):
@@ -257,7 +277,7 @@ class Wall(pygame.sprite.Sprite):
         super().__init__(def_group)
         group.add(self)
         self.types = {
-            'brick': pygame.transform.scale(load_image('brick.png'),(size, size)),
+            'brick': pygame.transform.scale(load_image('brick.png'), (size, size)),
             'steel': pygame.transform.scale(load_image('steel.png'), (size, size)),
             'impassable': pygame.transform.scale(load_image('impassable.png'), (size, size)),
             'leaves': pygame.transform.scale(load_image('leaves.png'), (size, size))
@@ -401,7 +421,25 @@ class EnemyTank(pygame.sprite.Sprite):
     def pos(self):
         return self.rect.x, self.rect.y
 
-        # движение танка игрока
+    def update(self):
+        if pygame.sprite.spritecollide(self, walls, False):
+            other = pygame.sprite.spritecollide(self, walls, False)
+            x = self.rect.x
+            y = self.rect.y
+            if self.direction == 'up':
+                j = y // size
+                self.rect.y = size * (j + 1)
+            if self.direction == 'down':
+                j = (y + self.rect.height) // size
+                self.rect.y = size * (j - 1)
+            if self.direction == 'left':
+                i = x // size
+                self.rect.x = size * (i + 1)
+            if self.direction == 'right':
+                i = x // size
+                self.rect.x = size + self.rect.width * (i - 1)
+
+    # движение танка игрока
 
     def move(self, direct):
         next_pos = direct[-1]
@@ -503,7 +541,7 @@ class Spawn(pygame.sprite.Sprite):
             EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
 
 
-def load_level(filename):
+def load_level(filename='level_1'):
     filename = "data/" + filename
     # читаем уровень, убирая символы перевода строки
     with open(filename, 'r') as mapFile:
@@ -519,20 +557,25 @@ def load_level(filename):
 tile_width = tile_height = size
 
 
-def generate_level(level):
+def generate_level(level='level_1'):
     new_player, x, y = None, None, None
+    global matrix
+    matrix = [[0 for _ in range(len(level))] for _ in range(len(level))]
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == 'W':
                 Wall(all_sprites, (y * size, x * size), walls, 'impassable')
+                matrix[y][x] = 1
             elif level[y][x] == '#':
                 Wall(all_sprites, (y * size, x * size), walls, 'steel')
+                matrix[y][x] = 1
             elif level[y][x] == 'F':
                 MainFlag(all_sprites, (y * size, x * size), flags)
             elif level[y][x] == 'L':
                 Wall(all_sprites, (y * size, x * size), leaves, 'leaves')
             elif level[y][x] == '*':
                 Wall(all_sprites, (y * size, x * size), walls, 'brick')
+                matrix[y][x] = 1
             elif level[y][x] == 'E':
                 EnemyTank(all_sprites, enemies, (y * size, x * size))
             elif level[y][x] == '@':
@@ -650,7 +693,8 @@ height = 600
 pygame.init()
 pygame.key.set_repeat(200, 10)
 STEP = 1
-height, width = size * 15, size * 16
+height, width = size * 16, size * 16
+# height, width = 1000, 1000
 screen = pygame.display.set_mode((width, height))
 
 player_shot = False  # флаг-указатель наличия пули игрока на поле
@@ -664,7 +708,7 @@ while running:
 
     screen.fill((0, 0, 0))
     if player is None:
-        player, x, y = generate_level(load_level('test_level.txt'))
+        player, x, y = generate_level(load_level())
     all_sprites.add(player)
     players.add(player)
     for event in pygame.event.get():
