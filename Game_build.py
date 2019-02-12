@@ -15,7 +15,7 @@ leaves = pygame.sprite.Group()
 flags = pygame.sprite.Group()
 clock = pygame.time.Clock()
 FPS = 50
-
+size = 30
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -35,7 +35,7 @@ def load_image(name, colorkey=None):
 # Класс танка игрока
 
 class PlayerTank(pygame.sprite.Sprite):
-    image = pygame.transform.scale(load_image('tank.png'), (65, 65))
+    image = pygame.transform.scale(load_image('tank.png'), (size, size))
 
     def __init__(self, def_group, group, startpos=(500, 500)):
         super().__init__(def_group)
@@ -57,9 +57,9 @@ class PlayerTank(pygame.sprite.Sprite):
         self.direction = 'up'
         self.images = {
             'up': self.image,
-            'down': pygame.transform.scale(pygame.transform.rotate(self.image, 180), (65, 65)),
-            'right': pygame.transform.scale(pygame.transform.rotate(self.image, 270), (65, 65)),
-            'left': pygame.transform.scale(pygame.transform.rotate(self.image, 90), (65, 65))
+            'down': pygame.transform.scale(pygame.transform.rotate(self.image, 180), (size, size)),
+            'right': pygame.transform.scale(pygame.transform.rotate(self.image, 270), (size, size)),
+            'left': pygame.transform.scale(pygame.transform.rotate(self.image, 90), (size, size))
         }
 
         # пока не будет музыки передвижения
@@ -84,7 +84,7 @@ class PlayerTank(pygame.sprite.Sprite):
     def explose(self):
         self.wounds -= 1
         if self.wounds == 0:
-            self.image = pygame.transform.scale(load_image('explosion.png'), (65, 65))
+            self.image = pygame.transform.scale(load_image('explosion.png'), (size, size))
             #
             # Добавить анимацию взрыва
             #
@@ -123,45 +123,33 @@ class PlayerTank(pygame.sprite.Sprite):
                 # if i.pos()[0] == self.rect.x and self.rect.y < i.pos()[1]:
                 if self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + 1):
                     self.impassible['down'] = False
-                    print(1)
-                    # continue
                 # if i.pos()[0] == self.rect.x and i.pos()[1] < self.rect.y:
                 if self.rect.y in range(i.pos()[1], i.pos()[1] + height + 1):
                     self.impassible['up'] = False
-                    print(2)
                     # continue
                 # if i.pos()[0] > self.rect.x and i.pos()[1] == self.rect.y:
                 if self.rect.x in range(i.pos()[0], i.pos()[0] + i.rect.width + 1):
                     self.impassible['left'] = False
-                    print(3)
                     # continue
                 # if i.pos()[0] < self.rect.x and i.pos()[1] == self.rect.y:
                 if self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + 1):
-                    print(4)
                     self.impassible['right'] = False
+        if pygame.sprite.spritecollide(self, enemies, False):
+            for i in enemies:
+                if self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + 1):
+                    self.impassible['down'] = False
                     # continue
-        elif len(other) == 1:
-            if pygame.sprite.spritecollide(self, enemies, False):
-                for i in enemies:
-                    if self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + 1):
-                        self.impassible['down'] = False
-                        print(1)
-                        # continue
-                    # if i.pos()[0] == self.rect.x and i.pos()[1] < self.rect.y:
-                    if self.rect.y in range(i.pos()[1], i.pos()[1] + height + 1):
-                        self.impassible['up'] = False
-                        print(2)
-                        # continue
-                    # if i.pos()[0] > self.rect.x and i.pos()[1] == self.rect.y:
-                    if self.rect.x in range(i.pos()[0], i.pos()[0] + i.rect.width + 1):
-                        self.impassible['left'] = False
-                        print(3)
-                        # continue
-                    # if i.pos()[0] < self.rect.x and i.pos()[1] == self.rect.y:
-                    if self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + 1):
-                        print(4)
-                        self.impassible['right'] = False
-                        # continue
+                # if i.pos()[0] == self.rect.x and i.pos()[1] < self.rect.y:
+                if self.rect.y in range(i.pos()[1], i.pos()[1] + height + 1):
+                    self.impassible['up'] = False
+                    # continue
+                # if i.pos()[0] > self.rect.x and i.pos()[1] == self.rect.y:
+                if self.rect.x in range(i.pos()[0], i.pos()[0] + i.rect.width + 1):
+                    self.impassible['left'] = False
+                    # continue
+                # if i.pos()[0] < self.rect.x and i.pos()[1] == self.rect.y:
+                if self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + 1):
+                    self.impassible['right'] = False
         if self.impassible[next_pos]:
             if self.direction == next_pos:
                 self.rect = self.rect.move(*direct)
@@ -172,14 +160,14 @@ class PlayerTank(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.rect.height = 65
-        self.rect.width = 65
+        self.rect.height = size
+        self.rect.width = size
         #  проверить по координатам
 
 
 # создание класса пули
 class Bullet(pygame.sprite.Sprite):
-    image = pygame.transform.scale(load_image('bullet.png'), (10, 20))
+    image = pygame.transform.scale(load_image('bullet.png'), (size // 5, size // 5 * 2))
 
     # группа спрайтов, позиция, направление, чья пуля(врага, игрока)
     def __init__(self, group, pos, directon, side):
@@ -217,8 +205,8 @@ class Bullet(pygame.sprite.Sprite):
         # из соответсвтвующей точки
 
         # corr_x, corr_y = coor[self.direction]
-        self.rect.x = pos[0] + pos[2] // 2 - 5
-        self.rect.y = pos[1] + pos[3] // 2 - 5
+        self.rect.x = pos[0] + pos[2] // 2
+        self.rect.y = pos[1] + pos[3] // 2
 
         # звуковое оформление сделаем позже
         self.sound = None
@@ -248,7 +236,6 @@ class Bullet(pygame.sprite.Sprite):
             enother = pygame.sprite.spritecollide(self, flags, False)
             for i in enother:
                 try:
-                    print('ok')
                     i.defeat()
                 except Exception:
                     pass
@@ -270,10 +257,10 @@ class Wall(pygame.sprite.Sprite):
         super().__init__(def_group)
         group.add(self)
         self.types = {
-            'brick': load_image('brick.png'),
-            'steel': pygame.transform.scale(load_image('steel.png'), (65, 65)),
-            'impassable': pygame.transform.scale(load_image('impassable.png'), (65, 65)),
-            'leaves': pygame.transform.scale(load_image('leaves.png'), (65, 65))
+            'brick': pygame.transform.scale(load_image('brick.png'),(size, size)),
+            'steel': pygame.transform.scale(load_image('steel.png'), (size, size)),
+            'impassable': pygame.transform.scale(load_image('impassable.png'), (size, size)),
+            'leaves': pygame.transform.scale(load_image('leaves.png'), (size, size))
         }
         self.type = wall_type
         self.image = self.types[wall_type]
@@ -335,7 +322,6 @@ class Wall(pygame.sprite.Sprite):
                 self.rect.y = y + self.damages['up'] * step
                 self.mask = pygame.mask.from_surface(self.image)
             elif self.condition == 0:
-                print('kill')
                 self.kill()
 
     def pos(self):
@@ -347,7 +333,7 @@ class Wall(pygame.sprite.Sprite):
 
 
 class EnemyTank(pygame.sprite.Sprite):
-    image = pygame.transform.scale(load_image('enemy.png'), (65, 65))
+    image = pygame.transform.scale(load_image('enemy.png'), (size, size))
 
     def __init__(self, def_group, group, startpos=None):
         super().__init__(def_group)
@@ -390,7 +376,7 @@ class EnemyTank(pygame.sprite.Sprite):
     def explose(self):
         self.wounds -= 1
         if self.wounds == 0:
-            self.image = pygame.transform.scale(load_image('explosion.png'), (65, 65))
+            self.image = pygame.transform.scale(load_image('explosion.png'), (size, size))
 
             #
             # Добавить анимацию взрыва
@@ -446,7 +432,7 @@ class EnemyTank(pygame.sprite.Sprite):
 
 
 class Leaves(Wall):
-    image = pygame.transform.scale(load_image('leaves.png'), (65, 65))
+    image = pygame.transform.scale(load_image('leaves.png'), (size, size))
 
     def __init__(self, all_group, pos, group):
         super().__init__(all_group, pos, leaves, 'leaves')
@@ -478,7 +464,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
 
 class MainFlag(pygame.sprite.Sprite):
-    image = pygame.transform.scale(load_image('Flag.png'), (65, 65))
+    image = pygame.transform.scale(load_image('Flag.png'), (size, size))
 
     def __init__(self, group, pos, gr):
         super().__init__(group)
@@ -496,6 +482,27 @@ class MainFlag(pygame.sprite.Sprite):
         pygame.quit()
 
 
+class Spawn(pygame.sprite.Sprite):
+    image = load_image('spawn_point.png')
+
+    def __init__(self, def_group, pos, limit):
+        super().__init__(def_group)
+        self.image = pygame.transform.scale(Spawn.image, (size, size))
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0] * size
+        self.rect.y = pos[1] * size
+        self.limit = limit
+        self.time = 2000
+
+    def delay(self):
+        pygame.time.wait(self.time)
+        self.spawn()
+
+    def spawn(self):
+        if self.limit != 0:
+            EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
+
+
 def load_level(filename):
     filename = "data/" + filename
     # читаем уровень, убирая символы перевода строки
@@ -509,15 +516,7 @@ def load_level(filename):
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
 
-tile_width = tile_height = 65
-
-
-# Flag = MainFlag(all_sprites, (100, 400), flags)
-# leaves_wall = Wall(all_sprites, (100, 100), leaves, 'leaves')
-# enemy = EnemyTank(all_sprites, enemies, (100, 300))
-# wall = Wall(all_sprites, (400, 250), walls, 'brick')
-# unbreak_wall = Wall(all_sprites, (300, 100), walls, 'steel')
-# water_wall = Wall(all_sprites, (100, 200), walls, 'impassable')
+tile_width = tile_height = size
 
 
 def generate_level(level):
@@ -525,19 +524,21 @@ def generate_level(level):
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == 'W':
-                Wall(all_sprites, (y * 65, x * 65), walls, 'impassable')
+                Wall(all_sprites, (y * size, x * size), walls, 'impassable')
             elif level[y][x] == '#':
-                Wall(all_sprites, (y * 65, x * 65), walls, 'steel')
+                Wall(all_sprites, (y * size, x * size), walls, 'steel')
             elif level[y][x] == 'F':
-                MainFlag(all_sprites, (y * 65, x * 65), flags)
+                MainFlag(all_sprites, (y * size, x * size), flags)
             elif level[y][x] == 'L':
-                Wall(all_sprites, (y * 65, x * 65), leaves, 'leaves')
+                Wall(all_sprites, (y * size, x * size), leaves, 'leaves')
             elif level[y][x] == '*':
-                Wall(all_sprites, (y * 65, x * 65), walls, 'brick')
+                Wall(all_sprites, (y * size, x * size), walls, 'brick')
             elif level[y][x] == 'E':
-                EnemyTank(all_sprites, enemies, (y * 65, x * 65))
+                EnemyTank(all_sprites, enemies, (y * size, x * size))
             elif level[y][x] == '@':
-                new_player = PlayerTank(all_sprites, players, (y * 65, x * 65))
+                new_player = PlayerTank(all_sprites, players, (y * size, x * size))
+            elif level[y][x] in '123456789':
+                Spawn(all_sprites, (y * size, x * size), int(level[y][x]))
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
@@ -563,6 +564,8 @@ def terminate():
 
 
 def start_screen(game_over=False):
+    pygame.mixer_music.load('data/main_menu.mp3')
+    pygame.mixer_music.play()
     WIDTH = 400
     HEIGHT = 600
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -588,6 +591,7 @@ def start_screen(game_over=False):
                 if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 5,
                                                                                                  HEIGHT // 10 * 5 + 75) and not game_over:
                     if event.button == 1:
+                        pygame.mixer_music.pause()
                         return
                 if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 8,
                                                                                                  HEIGHT // 10 * 8 + 75) and not game_over:
@@ -646,7 +650,7 @@ height = 600
 pygame.init()
 pygame.key.set_repeat(200, 10)
 STEP = 1
-height, width = 65 * 15, 65 * 16
+height, width = size * 15, size * 16
 screen = pygame.display.set_mode((width, height))
 
 player_shot = False  # флаг-указатель наличия пули игрока на поле
@@ -657,6 +661,7 @@ running = True
 start = False
 player = None
 while running:
+
     screen.fill((0, 0, 0))
     if player is None:
         player, x, y = generate_level(load_level('test_level.txt'))
@@ -698,7 +703,5 @@ while running:
     all_sprites.update()
     clock.tick(FPS)
     pygame.display.flip()
-
-
 
 pygame.quit()

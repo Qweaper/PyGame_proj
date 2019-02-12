@@ -144,28 +144,27 @@ class PlayerTank(pygame.sprite.Sprite):
                     print(4)
                     self.impassible['right'] = False
                     # continue
-        elif len(other) == 1:
-            if pygame.sprite.spritecollide(self, enemies, False):
-                for i in enemies:
-                    if self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + 1):
-                        self.impassible['down'] = False
-                        print(1)
-                        # continue
-                    # if i.pos()[0] == self.rect.x and i.pos()[1] < self.rect.y:
-                    if self.rect.y in range(i.pos()[1], i.pos()[1] + height + 1):
-                        self.impassible['up'] = False
-                        print(2)
-                        # continue
-                    # if i.pos()[0] > self.rect.x and i.pos()[1] == self.rect.y:
-                    if self.rect.x in range(i.pos()[0], i.pos()[0] + i.rect.width + 1):
-                        self.impassible['left'] = False
-                        print(3)
-                        # continue
-                    # if i.pos()[0] < self.rect.x and i.pos()[1] == self.rect.y:
-                    if self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + 1):
-                        print(4)
-                        self.impassible['right'] = False
-                        # continue
+        if pygame.sprite.spritecollide(self, enemies, False):
+            for i in enemies:
+                if self.rect.y in range(i.pos()[1] - i.rect.height, i.pos()[1] + 1):
+                    self.impassible['down'] = False
+                    print(1)
+                    # continue
+                # if i.pos()[0] == self.rect.x and i.pos()[1] < self.rect.y:
+                if self.rect.y in range(i.pos()[1], i.pos()[1] + height + 1):
+                    self.impassible['up'] = False
+                    print(2)
+                    # continue
+                # if i.pos()[0] > self.rect.x and i.pos()[1] == self.rect.y:
+                if self.rect.x in range(i.pos()[0], i.pos()[0] + i.rect.width + 1):
+                    self.impassible['left'] = False
+                    print(3)
+                    # continue
+                # if i.pos()[0] < self.rect.x and i.pos()[1] == self.rect.y:
+                if self.rect.x in range(i.pos()[0] - i.rect.width, i.pos()[0] + 1):
+                    print(4)
+                    self.impassible['right'] = False
+                    # continue
         if self.impassible[next_pos]:
             if self.direction == next_pos:
                 self.rect = self.rect.move(*direct)
@@ -225,7 +224,9 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.y = pos[1] + pos[3] // 2 - 5
 
         # звуковое оформление сделаем позже
-        self.sound = None
+
+        # pygame.mixer.music.pause()
+
         side.add(self)
 
     # стандартный метод движения пули
@@ -316,7 +317,7 @@ class Wall(pygame.sprite.Sprite):
                     'right': 'left'
                 }
                 bull_dir = rev_dir[bull_dir]
-                step = self.rect.width // 5
+                step = self.rect.width // 4
                 if bull_dir == 'up':
                     self.damages[bull_dir] += 1
                     self.damages['right'] += 1
@@ -332,6 +333,8 @@ class Wall(pygame.sprite.Sprite):
                 # self.image = pygame.transform.scale(self.image, (self.rect.width, 40))
                 x = self.rect.x
                 y = self.rect.y
+                # print(x, y, self.rect.width, self.rect.height)
+                # print(self.damages.values(), self.condition, step)
                 self.image = pygame.transform.scale(self.image, (
                     self.rect.width - self.damages['down'] * step, self.rect.height - self.damages['right'] * step))
                 self.rect = self.image.get_rect()
@@ -339,7 +342,7 @@ class Wall(pygame.sprite.Sprite):
                 self.rect.y = y + self.damages['up'] * step
                 self.mask = pygame.mask.from_surface(self.image)
             elif self.condition == 0:
-                print('kill')
+                # print('kill')
                 self.kill()
 
     def pos(self):
@@ -502,6 +505,27 @@ class MainFlag(pygame.sprite.Sprite):
         pygame.quit()
 
 
+class Spawn(pygame.sprite.Sprite):
+    image = load_image('spawn_point.png')
+
+    def __init__(self, def_group, pos, limit):
+        super().__init__(def_group)
+        self.image = pygame.transform.scale(Spawn.image, (65, 65))
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+        self.limit = limit
+        self.time = 2000
+
+    def delay(self):
+        pygame.time.wait(self.time)
+        self.spawn()
+
+    def spawn(self):
+        if self.limit != 0:
+            EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
+
+
 if __name__ == '__main__':
 
     player_shot = False  # флаг-указатель наличия пули игрока на поле
@@ -517,6 +541,7 @@ if __name__ == '__main__':
     player = PlayerTank(all_sprites, players, (width // 2, height // 2))
     running = True
     FPS = 50
+    Spawn(all_sprites, (100, 50), 5)
     while running:
         screen.fill((255, 255, 255))
         all_sprites.draw(screen)
@@ -536,8 +561,9 @@ if __name__ == '__main__':
                 if event.key == pygame.K_SPACE and not player_shot:
                     # if event.key == pygame.K_SPACE:
                     bullet = Bullet(all_sprites, player.pos(), player.direction, player_bullets)
+
                     player_shot = True
-        enemy.move(((1, 0), 'up'))
+        # enemy.move(((1, 0), 'up'))
         # проверка наличия пули на поле
         if player_shot:
             # проверка пули в пределах экрана
