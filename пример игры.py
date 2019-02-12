@@ -1,7 +1,7 @@
-import pygame
-import sys
 import os
-import time
+import sys
+
+import pygame
 
 FPS = 50
 WIDTH = 800
