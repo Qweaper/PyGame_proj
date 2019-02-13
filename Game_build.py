@@ -106,16 +106,15 @@ class PlayerTank(pygame.sprite.Sprite):
     def explose(self):
         self.wounds -= 1
         if self.wounds == 0:
-            self.image = pygame.transform.scale(load_image('explosion.png'), (size, size))
-            #
-            # Добавить анимацию взрыва
-            #
             self.lifes -= 1
             clock.tick(FPS)
-            self.kill()
+            self.spawn()
 
-            if self.lifes != 0:
-                self.spawn()
+        if self.lifes == 0:
+            global player
+            player = None
+            self.kill()
+            start_screen(True)
 
     # метод респавна танка
     def spawn(self):
