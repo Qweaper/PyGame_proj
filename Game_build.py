@@ -1,7 +1,7 @@
 import os
 import random
 import sys
-import pprint
+import time
 import pygame
 
 from tank import PlayerTank, Bullet, Wall, EnemyTank, Leaves, MainFlag
@@ -415,13 +415,26 @@ class EnemyTank(pygame.sprite.Sprite):
         self.image = self.images[self.direction]
         self.rect.x, self.rect.y = (random.randint(100, 200), random.randint(250, 300))
         self.wounds = 1
-
+        self.time = 0
         # метод для возпращения позиции(пока не используется)
 
     def pos(self):
         return self.rect.x, self.rect.y
 
     def update(self):
+        if self.time // (random.randint(2, 4) * 1000) != 1:
+            self.time += time.clock()
+        else:
+            self.choose_path()
+            self.time = 0
+        if self.direction == 'up':
+            self.move(((0, -STEP), self.direction))
+        if self.direction == 'down':
+            self.move(((0, STEP), self.direction))
+        if self.direction == 'left':
+            self.move(((-STEP, 0), self.direction))
+        if self.direction == 'right':
+            self.move(((STEP, 0), self.direction))
         if pygame.sprite.spritecollide(self, walls, False):
             other = pygame.sprite.spritecollide(self, walls, False)
             x = self.rect.x
@@ -439,6 +452,30 @@ class EnemyTank(pygame.sprite.Sprite):
                 i = x // size
                 self.rect.x = size + self.rect.width * (i - 1)
 
+    def choose_path(self, code='udlr'):
+        if code == 'udlr':
+            randomizer = random.randint(1, 101)
+        elif code == 'udl':
+            randomizer = random.randint(1, 89)
+        elif code == 'udr':
+            randomizer = random.randint(1, 89)
+            if 75 < randomizer < 89:
+                randomizer = 80
+        elif code == 'ulr':
+            randomizer = random.randint(26, 101)
+            if 25 < randomizer <= 75:
+                randomizer = 50
+        elif code == 'dlr':
+            randomizer = random.randint(51, 101)
+        if randomizer <= 50:
+            self.direction = 'up'
+        elif 50 < randomizer <= 75:
+            self.direction = 'down'
+        elif 75 < randomizer < 89:
+            self.direction = 'left'
+        else:
+            self.direction = 'right'
+
     # движение танка игрока
 
     def move(self, direct):
@@ -451,12 +488,6 @@ class EnemyTank(pygame.sprite.Sprite):
 
             if not pygame.sprite.spritecollide(self, walls, False):
                 self.rect = self.rect.move(*direct)
-                self.time += 20
-                if self.time >= 2000:
-                    x = random.choice([-5, 0, 5])
-                    y = 0
-                    if x == 0:
-                        y = random.choice([-5, 0, 5])
 
                 #  проверить по координатам
                 #  передвижение танка на 4 флага
