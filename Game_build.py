@@ -432,10 +432,10 @@ class EnemyTank(pygame.sprite.Sprite):
     def update(self):
         self.time += time.clock()
         self.shoot_time += time.clock()
-        if self.time // (random.randint(1, 4) * 1000) >= 1:
+        if self.time // (random.randint(2, 4) * 1000) >= 1:
             self.choose_path()
             self.time = 0
-        if self.shoot_time // 1000 >= 1:
+        if self.shoot_time // (1000 * random.randint(2, 4)) >= 1:
             bul = Bullet(all_sprites, self.pos(), self.direction, enemy_bullets, 'enemy')
             self.shoot = True
             self.shoot_time = 0
@@ -470,34 +470,41 @@ class EnemyTank(pygame.sprite.Sprite):
         if code == 'udlr':
             randomizer = random.randint(1, 101)
         elif code == 'udl':
-            randomizer = random.randint(1, 89)
+            randomizer = random.randint(1, 76)
         elif code == 'udr':
-            randomizer = random.randint(1, 89)
+            randomizer = random.randint(1, 76)
             if 75 < randomizer < 89:
-                randomizer = 80
+                randomizer = 60
         elif code == 'ulr':
             randomizer = random.randint(26, 101)
-            if 25 < randomizer <= 75:
-                randomizer = 50
+            if 25 < randomizer <= 50:
+                randomizer = 25
         elif code == 'dlr':
             randomizer = random.randint(51, 101)
-        if randomizer <= 50:
+        if randomizer <= 25:
             self.direction = 'up'
-        elif 50 < randomizer <= 75:
+        elif 25 < randomizer <= 50:
             self.direction = 'down'
-        elif 75 < randomizer < 89:
+        elif 50 < randomizer < 76:
             self.direction = 'left'
         else:
             self.direction = 'right'
 
-    # движение танка игрока
+    # движение танка враа
 
     def move(self, direct):
         next_pos = direct[-1]
         direct = direct[0]
+        rev_dir = {
+            'up': 'right',
+            'down': 'left',
+            'left': 'up',
+            'right': 'down'
+        }
+        bull_dir = rev_dir[next_pos]
         self.direction = next_pos
-        self.mask = self.mask = pygame.mask.from_surface(self.images[next_pos])
-        self.image = self.images[next_pos]
+        self.mask = self.mask = pygame.mask.from_surface(self.images[bull_dir])
+        self.image = self.images[bull_dir]
         if not pygame.sprite.spritecollide(self, players, False):
 
             if not pygame.sprite.spritecollide(self, walls, False):
