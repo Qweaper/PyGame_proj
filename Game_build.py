@@ -15,8 +15,10 @@ walls = pygame.sprite.Group()
 leaves = pygame.sprite.Group()
 flags = pygame.sprite.Group()
 clock = pygame.time.Clock()
+spawns = pygame.sprite.Group()
 FPS = 50
 size = 30
+pygame.init()
 
 
 def load_image(name, colorkey=None):
@@ -571,6 +573,8 @@ class MainFlag(pygame.sprite.Sprite):
         sec = 0
         for i in all_sprites:
             i.kill()
+        global player
+        player = None
         start_screen(True)
 
 
@@ -585,6 +589,7 @@ class Spawn(pygame.sprite.Sprite):
         self.rect.y = pos[1]
         self.limit = limit
         self.time = 0
+        spawns.add(self)
 
     def update(self):
         self.time += time.clock()
@@ -738,69 +743,75 @@ def start_screen(game_over=False):
         clock.tick(FPS)
 
 
-start_screen()
+while True:
+    start_screen()
 
-# def game():
-width = 800
-height = 600
+    # def game():
+    width = 800
+    height = 600
 
-pygame.init()
-pygame.key.set_repeat(200, 10)
-STEP = 1
-height, width = size * 15, size * 16
-# height, width = 1000, 1000
-screen = pygame.display.set_mode((width, height))
+    pygame.key.set_repeat(200, 10)
+    STEP = 1
+    # height, width = size * 15, size * 16
+    # # height, width = 1000, 1000
+    # screen = pygame.display.set_mode((width, height))
 
-player_shot = False  # флаг-указатель наличия пули игрока на поле
+    player_shot = False  # флаг-указатель наличия пули игрока на поле
 
-screen_rect = (0, 0, width, height)
+    screen_rect = (0, 0, width, height)
 
-running = True
-start = False
-player = None
-while running:
+    num_of_enemies = 0
+    for i in spawns:
+        num_of_enemies += i.limit
+    running = True
+    start = False
+    player = None
+    while running:
 
-    screen.fill((0, 0, 0))
-    if player is None:
-        player, x, y = generate_level(load_level())
-    all_sprites.add(player)
-    players.add(player)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            start_screen()
-        # if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+        if player is None:
+            player, x, y = generate_level(load_level())
+            height, width = size * 15, size * 16
+            # height, width = 1000, 1000
+            screen = pygame.display.set_mode((width, height))
+            all_sprites.add(player)
+            players.add(player)
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                # start_screen()
+            # if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
 
-        if event.type == pygame.KEYDOWN:  # Управление нашим танком
-            if event.key == pygame.K_UP:
-                player.move(((0, -STEP), 'up'))
-            if event.key == pygame.K_DOWN:
-                player.move(((0, STEP), 'down'))
-            if event.key == pygame.K_RIGHT:
-                player.move(((STEP, 0), 'right'))
-            if event.key == pygame.K_LEFT:
-                player.move(((-STEP, 0), 'left'))
-            # выстрел пули на пробел
-            if event.key == pygame.K_SPACE and not player_shot:
-                # if event.key == pygame.K_SPACE:
-                if len(player_bullets) == 0:
-                    bullet = Bullet(all_sprites, player.pos(), player.direction, player_bullets, 'player')
-                    player_shot = True
-        # проверка наличия пули на поле
-        if player_shot:
-            # проверка пули в пределах экрана
-            if bullet.rect.x not in range(width) or bullet.rect.y not in range(height):
-                bullet.kill()
-                player_shot = False
-            # clock.tick(30)
+            if event.type == pygame.KEYDOWN:  # Управление нашим танком
+                if event.key == pygame.K_UP:
+                    player.move(((0, -STEP), 'up'))
+                if event.key == pygame.K_DOWN:
+                    player.move(((0, STEP), 'down'))
+                if event.key == pygame.K_RIGHT:
+                    player.move(((STEP, 0), 'right'))
+                if event.key == pygame.K_LEFT:
+                    player.move(((-STEP, 0), 'left'))
+                # выстрел пули на пробел
+                if event.key == pygame.K_SPACE and not player_shot:
+                    # if event.key == pygame.K_SPACE:
+                    if len(player_bullets) == 0:
+                        bullet = Bullet(all_sprites, player.pos(), player.direction, player_bullets, 'player')
+                        player_shot = True
+            # проверка наличия пули на поле
+            if player_shot:
+                # проверка пули в пределах экрана
+                if bullet.rect.x not in range(width) or bullet.rect.y not in range(height):
+                    bullet.kill()
+                    player_shot = False
+                # clock.tick(30)
 
-        # стандартная отрисовка объектов
-        # пуля, такн игрока
-    all_sprites.draw(screen)
-    players.draw(screen)
-    leaves.draw(screen)
-    all_sprites.update()
-    clock.tick(FPS)
-    pygame.display.flip()
+            # стандартная отрисовка объектов
+            # пуля, такн игрока
+        all_sprites.draw(screen)
+        players.draw(screen)
+        leaves.draw(screen)
+        all_sprites.update()
+        clock.tick(FPS)
+        pygame.display.flip()
 
-pygame.quit()
+    pygame.quit()
