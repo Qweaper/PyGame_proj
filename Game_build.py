@@ -253,6 +253,8 @@ class Bullet(pygame.sprite.Sprite):
             enother = pygame.sprite.spritecollideany(self, enemies, False)
             player_shot = False
             enother.explose()
+            global num_of_enemies
+            num_of_enemies -= 1
             self.kill()
         if pygame.sprite.spritecollide(self, flags, False):
             enother = pygame.sprite.spritecollide(self, flags, False)
@@ -416,7 +418,8 @@ class EnemyTank(pygame.sprite.Sprite):
                 self.kill()
 
         if self.wounds == 0:
-            self.spawn()
+            self.kill()
+            # self.spawn()
 
         # метод респавна танка
 
@@ -511,16 +514,6 @@ class EnemyTank(pygame.sprite.Sprite):
             if not pygame.sprite.spritecollide(self, walls, False):
                 self.rect = self.rect.move(*direct)
 
-                #  проверить по координатам
-                #  передвижение танка на 4 флага
-                #  создать функцию определения направления
-                #  Актуальные задачи:
-                #  перемещение вблизи стен
-                #  отрисовка стены и её разрушение
-                #  респаунн такнков
-                #  простенький "ИИ" на рандомах
-                #
-
 
 class Leaves(Wall):
     image = pygame.transform.scale(load_image('leaves.png'), (size, size))
@@ -594,6 +587,7 @@ class Spawn(pygame.sprite.Sprite):
         self.time += time.clock()
         if self.time // 10000 >= 1:
             self.time = 0
+            print(self.limit)
             if self.limit != 0:
                 EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
                 self.limit -= 1
@@ -716,20 +710,21 @@ def start_screen(game_over=False):
                         and event.pos[1] in range(50 + 0 * HEIGHT // 3, 50 + 0 * HEIGHT // 3 + HEIGHT // 20 * 3) \
                         and not game_over and choose_level:
                     if event.button == 1:
-                        level = 'level_2'
+                        level = 'level_1'
                         choose_level = False
 
                 elif event.pos[0] in range(WIDTH // 6, WIDTH // 6 + WIDTH // 8 * 5) \
                         and event.pos[1] in range(50 + 1 * HEIGHT // 3, 50 + 1 * HEIGHT // 3 + HEIGHT // 20 * 3) \
                         and not game_over and choose_level:
                     if event.button == 1:
-                        level = 'level_3'
+                        level = 'level_2'
                         choose_level = False
 
                 elif event.pos[0] in range(WIDTH // 6, WIDTH // 6 + WIDTH // 8 * 5) \
                         and event.pos[1] in range(50 + 2 * HEIGHT // 3, 50 + 2 * HEIGHT // 3 + HEIGHT // 20 * 3) \
                         and not game_over and choose_level:
                     if event.button == 1:
+                        level = 'level_3'
                         choose_level = False
 
             if (event.type == pygame.KEYDOWN or
@@ -797,8 +792,8 @@ def start_screen(game_over=False):
 
 
 while True:
-    start_screen()
     level = 'level_1'
+    start_screen()
     # def game():
     width = 800
     height = 600
@@ -810,17 +805,13 @@ while True:
     # screen = pygame.display.set_mode((width, height))
 
     player_shot = False  # флаг-указатель наличия пули игрока на поле
-
-    screen_rect = (0, 0, width, height)
-
     num_of_enemies = 0
-    for i in spawns:
-        num_of_enemies += i.limit
+    screen_rect = (0, 0, width, height)
+    print(level)
     running = True
     start = False
     player = None
     while running:
-
         if player is None:
             player, x, y = generate_level(load_level(level))
             height, width = size * 15, size * 16
@@ -828,7 +819,10 @@ while True:
             screen = pygame.display.set_mode((width, height))
             all_sprites.add(player)
             players.add(player)
+            for i in spawns:
+                num_of_enemies += i.limit
         screen.fill((0, 0, 0))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -858,6 +852,13 @@ while True:
                     player_shot = False
                 # clock.tick(30)
 
+        if num_of_enemies == 0:
+            player.kill()
+            player = None
+            level_num = int(level[-1]) % 3 + 1
+            for i in all_sprites:
+                i.kill()
+            level = level[:-1] + str(level_num)
             # стандартная отрисовка объектов
             # пуля, такн игрока
         all_sprites.draw(screen)
