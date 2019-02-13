@@ -190,9 +190,10 @@ class Bullet(pygame.sprite.Sprite):
     image = pygame.transform.scale(load_image('bullet.png'), (size // 5, size // 5 * 2))
 
     # группа спрайтов, позиция, направление, чья пуля(врага, игрока)
-    def __init__(self, group, pos, directon, side):
+    def __init__(self, group, pos, directon, side_group, side):
         super().__init__(group)
         # присваивание картинки спрайту
+        self.side = side
         self.image = Bullet.image
         self.rect = self.image.get_rect()
         self.images = {
@@ -230,7 +231,7 @@ class Bullet(pygame.sprite.Sprite):
 
         # звуковое оформление сделаем позже
         self.sound = None
-        side.add(self)
+        side_group.add(self)
 
     # стандартный метод движения пули
     # летит в одном направлении
@@ -247,7 +248,7 @@ class Bullet(pygame.sprite.Sprite):
                     # create_particles(enother.pos())
             except Exception:
                 pass
-        if pygame.sprite.spritecollideany(self, enemies, False):
+        if pygame.sprite.spritecollideany(self, enemies, False) and self.side == 'player':
             enother = pygame.sprite.spritecollideany(self, enemies, False)
             player_shot = False
             enother.explose()
@@ -259,6 +260,11 @@ class Bullet(pygame.sprite.Sprite):
                     i.defeat()
                 except Exception:
                     pass
+        if pygame.sprite.spritecollideany(self, players, False) and self.side == 'enemy':
+            enother = pygame.sprite.spritecollideany(self, players, False)
+            player_shot = False
+            enother.explose()
+            self.kill()
         self.corr_im(self.direction)
         self.rect = self.rect.move(self.fly_vector)
 
@@ -364,6 +370,7 @@ class EnemyTank(pygame.sprite.Sprite):
 
         # Переменная отвечающая за напрваление движения
         # И положение картинки
+        self.shoot = False
         self.direction = 'up'
         self.images = {
             'up': self.image,
@@ -388,6 +395,7 @@ class EnemyTank(pygame.sprite.Sprite):
         group.add(self)
 
         self.time = 0
+        self.shoot_time = 0
         #
         # надо добавить метод спавна танка на позиции
         #
@@ -413,20 +421,26 @@ class EnemyTank(pygame.sprite.Sprite):
 
     def spawn(self):
         self.image = self.images[self.direction]
-        self.rect.x, self.rect.y = (random.randint(100, 200), random.randint(250, 300))
+        self.rect.x, self.rect.y = self.res_pos
         self.wounds = 1
         self.time = 0
         # метод для возпращения позиции(пока не используется)
 
     def pos(self):
-        return self.rect.x, self.rect.y
+        return self.rect.x, self.rect.y, self.rect.width, self.rect.height
 
     def update(self):
-        if self.time // (random.randint(2, 4) * 1000) != 1:
-            self.time += time.clock()
-        else:
+        self.time += time.clock()
+        self.shoot_time += time.clock()
+        if self.time // (random.randint(1, 4) * 1000) >= 1:
             self.choose_path()
             self.time = 0
+        if self.shoot_time // 1000 >= 1:
+            bul = Bullet(all_sprites, self.pos(), self.direction, enemy_bullets, 'enemy')
+            self.shoot = True
+            self.shoot_time = 0
+        else:
+            self.shoot = False
         if self.direction == 'up':
             self.move(((0, -STEP), self.direction))
         if self.direction == 'down':
@@ -548,7 +562,9 @@ class MainFlag(pygame.sprite.Sprite):
         self.lifes -= 1
         self.image = load_image('defeat.png')
         sec = 0
-        pygame.quit()
+        for i in all_sprites:
+            i.kill()
+        start_screen(True)
 
 
 class Spawn(pygame.sprite.Sprite):
@@ -558,18 +574,18 @@ class Spawn(pygame.sprite.Sprite):
         super().__init__(def_group)
         self.image = pygame.transform.scale(Spawn.image, (size, size))
         self.rect = self.image.get_rect()
-        self.rect.x = pos[0] * size
-        self.rect.y = pos[1] * size
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
         self.limit = limit
-        self.time = 2000
+        self.time = 0
 
-    def delay(self):
-        pygame.time.wait(self.time)
-        self.spawn()
-
-    def spawn(self):
-        if self.limit != 0:
-            EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
+    def update(self):
+        self.time += time.clock()
+        if self.time // 10000 >= 1:
+            self.time = 0
+            if self.limit != 0:
+                EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
+                self.limit -= 1
 
 
 def load_level(filename='level_1'):
@@ -724,7 +740,7 @@ height = 600
 pygame.init()
 pygame.key.set_repeat(200, 10)
 STEP = 1
-height, width = size * 16, size * 16
+height, width = size * 15, size * 16
 # height, width = 1000, 1000
 screen = pygame.display.set_mode((width, height))
 
@@ -760,8 +776,9 @@ while running:
             # выстрел пули на пробел
             if event.key == pygame.K_SPACE and not player_shot:
                 # if event.key == pygame.K_SPACE:
-                bullet = Bullet(all_sprites, player.pos(), player.direction, player_bullets)
-                player_shot = True
+                if len(player_bullets) == 0:
+                    bullet = Bullet(all_sprites, player.pos(), player.direction, player_bullets, 'player')
+                    player_shot = True
         # проверка наличия пули на поле
         if player_shot:
             # проверка пули в пределах экрана

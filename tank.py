@@ -1,6 +1,6 @@
 import os
 import random
-
+import time
 import pygame
 
 pygame.init()
@@ -426,8 +426,10 @@ class EnemyTank(pygame.sprite.Sprite):
         # движение танка игрока
 
     def update(self):
-        
-        self.choose_path()
+        self.time += time.clock()
+        if self.time // (random.randint(2, 5) * 1000) >= 1:
+            self.choose_path()
+            self.time = 0
         if self.direction == 'up':
             self.move(((0, -STEP), self.direction))
         if self.direction == 'down':
@@ -591,7 +593,7 @@ if __name__ == '__main__':
     Spawn(all_sprites, (100, 50), 5)
     while running:
         screen.fill((255, 255, 255))
-        all_sprites.draw(screen)
+        # all_sprites.draw(screen)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
