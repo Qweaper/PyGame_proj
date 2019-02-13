@@ -615,7 +615,7 @@ def load_level(filename='level_1'):
 tile_width = tile_height = size
 
 
-def generate_level(level='level_1'):
+def generate_level(level='data/level_1'):
     new_player, x, y = None, None, None
     global matrix
     matrix = [[0 for _ in range(len(level))] for _ in range(len(level))]
@@ -681,23 +681,56 @@ def start_screen(game_over=False):
     # переделать самому тему с тестом
     # сделать кнопки, тупо координаты
     run = True
+    choose_level = False
 
     while run:
         # screen.fill((255, 255, 255))
-
+        global level
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 5,
-                                                                                                 HEIGHT // 10 * 5 + 75) and not game_over:
+                                                                                                 HEIGHT // 10 * 5 + 75) and not game_over and not choose_level:
                     if event.button == 1:
                         pygame.mixer_music.pause()
                         return
                 if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) and event.pos[1] in range(HEIGHT // 10 * 8,
-                                                                                                 HEIGHT // 10 * 8 + 75) and not game_over:
+                                                                                                 HEIGHT // 10 * 8 + 75) and not game_over and not choose_level:
                     if event.button == 1:
                         terminate()
+                        # WIDTH // 8, 0 + HEIGHT // 10 * 6 + 30, 300, 75
+                if event.pos[0] in range(WIDTH // 8, WIDTH // 8 + 300) \
+                        and event.pos[1] in range(HEIGHT // 10 * 6, 100 + HEIGHT // 10 * 6 + 75) \
+                        and not game_over and not choose_level:
+                    if event.button == 1:
+                        choose_level = True
+
+                elif event.pos[0] in range(0, 75) \
+                        and event.pos[1] in range(HEIGHT - 50, HEIGHT) \
+                        and not game_over and choose_level:
+                    if event.button == 1:
+                        choose_level = False
+
+                elif event.pos[0] in range(WIDTH // 6, WIDTH // 6 + WIDTH // 8 * 5) \
+                        and event.pos[1] in range(50 + 0 * HEIGHT // 3, 50 + 0 * HEIGHT // 3 + HEIGHT // 20 * 3) \
+                        and not game_over and choose_level:
+                    if event.button == 1:
+                        level = 'level_2'
+                        choose_level = False
+
+                elif event.pos[0] in range(WIDTH // 6, WIDTH // 6 + WIDTH // 8 * 5) \
+                        and event.pos[1] in range(50 + 1 * HEIGHT // 3, 50 + 1 * HEIGHT // 3 + HEIGHT // 20 * 3) \
+                        and not game_over and choose_level:
+                    if event.button == 1:
+                        level = 'level_3'
+                        choose_level = False
+
+                elif event.pos[0] in range(WIDTH // 6, WIDTH // 6 + WIDTH // 8 * 5) \
+                        and event.pos[1] in range(50 + 2 * HEIGHT // 3, 50 + 2 * HEIGHT // 3 + HEIGHT // 20 * 3) \
+                        and not game_over and choose_level:
+                    if event.button == 1:
+                        choose_level = False
 
             if (event.type == pygame.KEYDOWN or
                 event.type == pygame.MOUSEBUTTONDOWN) and game_over:
@@ -715,36 +748,57 @@ def start_screen(game_over=False):
                 screen.blit(text1, (x, y + 40))
                 y += 4
                 # print('game_over')
+        if choose_level:
+            screen.fill(COLOR_W)
+            for y in range(3):
+                pygame.draw.rect(screen, (128, 128, 128),
+                                 (WIDTH // 6, 50 + y * HEIGHT // 3, WIDTH // 8 * 5, HEIGHT // 20 * 3))
+                font = pygame.font.Font(None, 40)
+                text = font.render('level_{}'.format(y + 1), 1, (0, 0, 0))
+                screen.blit(text, (WIDTH // 6 + 75, 100 + y * HEIGHT // 3))
 
-        if y + 4 <= HEIGHT // 8 and not game_over:
+            button = pygame.draw.rect(screen, (128, 128, 128), (0, HEIGHT - 50, 75, 50))
+            font = pygame.font.Font(None, 40)
+            text = font.render('Back'.format(y + 1), 1, (0, 0, 0))
+            screen.blit(text, (0, HEIGHT - 25))
+
+        if y + 4 <= HEIGHT // 8 and not game_over and not choose_level:
             screen.fill(COLOR_W)
             pygame.draw.rect(screen, COLOR_W, (x, y, 300, 300))
             font = pygame.font.Font(None, 60)
             text = font.render("<<<Tanchiki>>>", 1, (0, 255, 0))
             screen.blit(text, (x, y))
             y += 4
-        if y + 4 >= HEIGHT // 8 and not game_over:
+
+        if y + 4 >= HEIGHT // 8 and not game_over and not choose_level:
             color = (0, 0, 0)
             # pygame.draw.rect(screen, (0, 0, 0), (x - 2, 0, 600, 300))
             screen.fill(COLOR_W)
             font = pygame.font.Font(None, 60)
             text = font.render("<<<Tanchiki>>>", 1, (0, 255, 0))
             screen.blit(text, (x, y))
+
             start_button = pygame.draw.rect(screen, (128, 128, 128), (WIDTH // 8, 0 + HEIGHT // 10 * 5, 300, 75))
             font = pygame.font.Font(None, 40)
             text = font.render('Начать игру', 1, (0, 0, 0))
             screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 5 + 20))
+
             exit_button = pygame.draw.rect(screen, (128, 128, 128), (WIDTH // 8, 0 + HEIGHT // 10 * 8, 300, 75))
             font = pygame.font.Font(None, 40)
             text = font.render('Выход', 1, (0, 0, 0))
             screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 8 + 20))
+
+            level_button = pygame.draw.rect(screen, (128, 128, 128), (WIDTH // 8, 0 + HEIGHT // 10 * 6 + 30, 300, 75))
+            font = pygame.font.Font(None, 40)
+            text = font.render('Уровень', 1, (0, 0, 0))
+            screen.blit(text, (WIDTH // 8 + 75, HEIGHT // 10 * 7))
         pygame.display.flip()
         clock.tick(FPS)
 
 
 while True:
     start_screen()
-
+    level = 'level_1'
     # def game():
     width = 800
     height = 600
@@ -768,7 +822,7 @@ while True:
     while running:
 
         if player is None:
-            player, x, y = generate_level(load_level())
+            player, x, y = generate_level(load_level(level))
             height, width = size * 15, size * 16
             # height, width = 1000, 1000
             screen = pygame.display.set_mode((width, height))
