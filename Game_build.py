@@ -114,6 +114,8 @@ class PlayerTank(pygame.sprite.Sprite):
             global player
             player = None
             self.kill()
+            for i in all_sprites:
+                i.kill()
             start_screen(True)
 
     # метод респавна танка
@@ -220,8 +222,8 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 0
 
         # корректировка начальной позиции снаряда
-        corr_x = self.rect.width
-        corr_y = self.rect.height
+        # corr_x = self.rect.width
+        # corr_y = self.rect.height
 
         # здесь надо сделать вылет пули
         # из соответсвтвующей точки
