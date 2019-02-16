@@ -441,7 +441,7 @@ class EnemyTank(pygame.sprite.Sprite):
         if self.time // (random.randint(2, 4) * 1000) >= 1:
             self.choose_path()
             self.time = 0
-        if self.shoot_time // (1000 * random.randint(2, 4)) >= 1:
+        if self.shoot_time // (1000 * random.randint(3, 6)) >= 1:
             bul = Bullet(all_sprites, self.pos(), self.direction, enemy_bullets, 'enemy')
             self.shoot = True
             self.shoot_time = 0
@@ -588,11 +588,12 @@ class Spawn(pygame.sprite.Sprite):
     def update(self):
         self.time += time.clock()
         if self.time // 10000 >= 1:
-            self.time = 0
             print(self.limit)
-            if self.limit != 0:
-                EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
-                self.limit -= 1
+            self.time = 0
+            if len(enemies) <= 4:
+                if self.limit != 0:
+                    EnemyTank(all_sprites, enemies, (self.rect.x, self.rect.y))
+                    self.limit -= 1
 
 
 def load_level(filename='level_1'):
